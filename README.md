@@ -9,13 +9,13 @@ A Discord bot to get people playing PSForever.
 3. Set the `BOT_TOKEN` and  `BOT_CHANNEL_ID` environment variables (or put them in `.env`)
 4. `npm start`
 
-### Add it to your server
+## Add it to your server
 Open this URL (fill in `your_client_id`):
 ```
 https://discordapp.com/oauth2/authorize?client_id=your_client_id&scope=bot
 ```
 
-### Configuration
+## Configuration
 
 * `BOT_TOKEN`: Discord access token (required)
 * `BOT_CHANNEL_ID`: Discord channel ID (required)

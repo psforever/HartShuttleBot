@@ -5,8 +5,8 @@ const client = new Discord.Client();
 require("dotenv").config();
 
 const emojis = {
-  newcon: "231260160511705088",
   terran: "444448298657513482",
+  newcon: "231260160511705088",
   vanu: "231260169676390403",
   thumbsup: "👍", // for testing
 };
@@ -15,39 +15,29 @@ const minPlayers = parseInt(process.env.BOT_MIN_PLAYERS, 10) || 20;
 const oneHourMiliseconds = 3600000;
 const channelId = process.env.BOT_CHANNEL_ID;
 
-let subscribers = [];
-let lastNotification = 0;
-
 client.login(process.env.BOT_TOKEN);
 
 client.on("ready", async () => {
-  console.info(`Logged in as ${client.user.tag}`);
+  console.info(`logged in as ${client.user.tag}`);
 
   const channel = await client.channels.fetch(channelId);
   let serverStats = await fetchServerStats();
-
+  let subscribers = [];
   let message = null;
-  const ownMessages = (await channel.messages.fetch({ limit: 10 })).filter(
+
+  const embedMessages = (await channel.messages.fetch({ limit: 10 })).filter(
     (m) => m.author.id === client.user.id && m.embeds.length > 0
   );
-
-  if (ownMessages.size > 0) {
-    message = ownMessages.first();
-    message.edit(embed());
-
-    // restore existing subscriptions
-    for (const [, reaction] of message.reactions.cache) {
-      await reaction.users.fetch();
-      for (const [, user] of reaction.users.cache) {
-        if (user.id !== client.user.id) {
-          subscribe(user);
-        }
-      }
-    }
+  if (embedMessages.size > 0) {
+    message = embedMessages.first();
+    message = await message.edit(embed());
+    await update();
   } else {
     message = await channel.send(embed());
   }
-  await watchReactions();
+  await message.react(emojis.terran);
+  await message.react(emojis.newcon);
+  await message.react(emojis.vanu);
 
   function embed() {
     const newMessage = new Discord.MessageEmbed().setThumbnail(
@@ -73,79 +63,96 @@ client.on("ready", async () => {
         },
         {
           name: "Not enough players?",
-          value: `React with your empire icon and we will notify you if more than ${minPlayers} players express interest within the next hour.`,
+          value: `React with your empire icon and we will notify you if at least ${minPlayers} players express interest within the next hour.`,
         }
       );
   }
 
-  async function checkNotification() {
-    // filter out expired subscriptions
-    subscribers = subscribers.filter(
-      (s) => Date.now() - s.time < oneHourMiliseconds
-    );
-    if (
-      subscribers.length > 0 &&
-      subscribers.length + serverStats.players.length >= minPlayers &&
-      Date.now() - lastNotification > oneHourMiliseconds
-    ) {
-      lastNotification = Date.now();
-      const pings = subscribers.map((s) => `<@${s.id}>`).join("");
-      await channel.send(
-        `We have ${subscribers.length} people wanting to play and ${serverStats.players.length} already online. Please login now and have fun!\n${pings}`
-      );
+  // update subscriptions
+  async function update() {
+    const active = [];
+    for (const [, reaction] of message.reactions.cache) {
+      await reaction.users.fetch();
+      for (const [, user] of reaction.users.cache) {
+        active.push(user.id);
+        if (
+          user.id !== client.user.id &&
+          !subscribers.find((s) => s.id === user.id)
+        ) {
+          subscribe(user);
+        }
+      }
+    }
+    for (const subscriber of subscribers) {
+      if (!active.find((uid) => uid === subscriber.id)) {
+        unsubscribe(subscriber);
+      }
     }
   }
 
-  async function watchReactions() {
-    await message.react(emojis.terran);
-    await message.react(emojis.newcon);
-    await message.react(emojis.vanu);
-
-    const filter = (reaction, user) => !user.bot; // TODO !!Object.values(emojis).find(e => e === reaction.emoji.name)
-    const collector = message.createReactionCollector(filter, {
-      time: oneHourMiliseconds,
-    });
-    collector.on("collect", (reaction, user) => {
-      subscribe(user);
-    });
-  }
-
-  async function subscribe(user) {
-    const existing = subscribers.find((s) => s.id === user.id);
+  function subscribe({ id, tag }) {
+    console.info(`subscribe ${tag}`);
+    const existing = subscribers.find((s) => s.id === id);
     if (existing) {
-      console.info(`refreshed subscription for ${user.tag}`);
       existing.time = Date.now();
     } else {
-      console.info(`added subscription for ${user.tag}`);
       subscribers.push({
-        id: user.id,
+        id,
+        tag,
         time: Date.now(),
       });
     }
-    await checkNotification();
   }
 
-  // Update server stats every 5 minutes
-  schedule.scheduleJob("*/5 * * * *", async () => {
-    serverStats = await fetchServerStats();
-    message.edit(embed());
-    await checkNotification();
-  });
+  async function unsubscribe({ id, tag }) {
+    console.info(`unsubscribe ${tag}`);
+    subscribers = subscribers.filter((s) => s.id !== id);
+    for (const [, reaction] of message.reactions.cache) {
+      await reaction.users.fetch();
+      for (const [, user] of reaction.users.cache) {
+        if (user.id !== id) {
+          reaction.users.remove(id);
+        }
+      }
+    }
+  }
 
-  // Post new message every hour
-  schedule.scheduleJob("0 * * * *", async function () {
-    message = await channel.send(embed());
-    console.info("posted new message");
-    await watchReactions();
-    // delete old messages
-    const oldMessages = (await channel.messages.fetch({ limit: 100 })).filter(
+  // Update server stats every minute
+  schedule.scheduleJob("*/1 * * * *", async () => {
+    await update();
+    serverStats = await fetchServerStats();
+    message = await message.edit(embed());
+
+    if (
+      subscribers.length > 0 &&
+      subscribers.length + serverStats.players.length >= minPlayers
+    ) {
+      const pings = subscribers.map((s) => `<@${s.id}>`).join(" ");
+      await channel.send(
+        `Your shuttle has arrived! ${subscribers.length} players are ready to play and ${serverStats.players.length} players are already online. ` +
+          `We hope to see you on the battlefield.\n${pings}`
+      );
+      for (const subscriber of subscribers) {
+        unsubscribe(subscriber);
+      }
+    }
+
+    // filter out expired subscriptions
+    for (const subscriber of subscribers) {
+      if (Date.now() - subscriber.time > oneHourMiliseconds) {
+        unsubscribe(subscriber);
+      }
+    }
+
+    // clear notifications after 10 minutes
+    const oldMessages = (await channel.messages.fetch({ limit: 10 })).filter(
       (m) =>
         m.author.id === client.user.id &&
-        Date.now() - m.createdTimestamp > oneHourMiliseconds * 0.9
+        m.embeds.length === 0 &&
+        Date.now() - m.createdTimestamp > oneHourMiliseconds / 10
     );
     for (const [, oldMessage] of oldMessages) {
       await oldMessage.delete();
-      console.info("deleted old message");
     }
   });
 });
