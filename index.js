@@ -38,7 +38,7 @@ client.on("ready", async () => {
   if (embedMessages.size > 0) {
     message = embedMessages.first();
     message = await message.edit(embed());
-    await update();
+    await updateSubscriptions();
   } else {
     message = await channel.send(embed());
   }
@@ -75,8 +75,7 @@ client.on("ready", async () => {
       );
   }
 
-  // update subscriptions
-  async function update() {
+  async function updateSubscriptions() {
     const active = [];
     for (const [, reaction] of message.reactions.cache) {
       await reaction.users.fetch();
@@ -86,7 +85,12 @@ client.on("ready", async () => {
           user.id !== client.user.id &&
           !subscribers.find((s) => s.id === user.id)
         ) {
-          subscribe(user);
+          if (serverStats.players.length + 1 < minPlayers) {
+            subscribe(user);
+          } else {
+            // server has plenty of online players, go away
+            unsubscribe(user);
+          }
         }
       }
     }
@@ -124,11 +128,20 @@ client.on("ready", async () => {
     }
   }
 
-  // Update server stats every minute
+  // Update server stats and subscriptions every minute
   schedule.scheduleJob("*/1 * * * *", async () => {
-    serverStats = await fetchServerStats();
-    message = await message.edit(embed());
-    await update();
+    const newStats = await fetchServerStats();
+    if (
+      newStats.empires.TR !== serverStats.empires.TR ||
+      newStats.empires.NC !== serverStats.empires.NC ||
+      newStats.empires.VS !== serverStats.empires.VS
+    ) {
+      serverStats = newStats;
+      message = await message.edit(embed());
+    } else {
+      message = await message.fetch();
+    }
+    await updateSubscriptions();
 
     if (
       subscribers.length > 0 &&
