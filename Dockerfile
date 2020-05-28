@@ -1,7 +1,11 @@
-FROM node
+FROM node:current-alpine
 
-ADD . /src
+ENV NODE_ENV=production
+
+COPY . /src
 
 WORKDIR /src
 
-CMD npm start
+RUN yarn install
+
+CMD yarn start
