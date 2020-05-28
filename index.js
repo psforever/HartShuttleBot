@@ -79,6 +79,10 @@ client.on("ready", async () => {
   }
 
   async function checkNotification() {
+    // filter out expired subscriptions
+    subscribers = subscribers.filter(
+      (s) => Date.now() - s.time < oneHourMiliseconds
+    );
     if (
       subscribers.length > 0 &&
       subscribers.length + serverStats.players.length >= minPlayers &&
@@ -107,10 +111,6 @@ client.on("ready", async () => {
   }
 
   async function subscribe(user) {
-    // filter out expired subscriptions
-    subscribers = subscribers.filter(
-      (s) => Date.now() - s.time < oneHourMiliseconds
-    );
     const existing = subscribers.find((s) => s.id === user.id);
     if (existing) {
       console.info(`refreshed subscription for ${user.tag}`);
