@@ -1,8 +1,15 @@
 const Discord = require("discord.js");
 const schedule = require("node-schedule");
 const fetch = require("node-fetch");
+const { transports, createLogger, format } = require("winston");
 const client = new Discord.Client();
 require("dotenv").config();
+
+const log = createLogger({
+  level: "info",
+  format: format.combine(format.timestamp(), format.json()),
+  transports: [new transports.Console()],
+});
 
 const emojis = {
   terran: "444448298657513482",
@@ -18,7 +25,7 @@ const channelId = process.env.BOT_CHANNEL_ID;
 client.login(process.env.BOT_TOKEN);
 
 client.on("ready", async () => {
-  console.info(`logged in as ${client.user.tag}`);
+  log.info(`logged in as ${client.user.tag}`);
 
   const channel = await client.channels.fetch(channelId);
   let serverStats = await fetchServerStats();
@@ -91,7 +98,7 @@ client.on("ready", async () => {
   }
 
   function subscribe({ id, tag }) {
-    console.info(`subscribe ${tag}`);
+    log.info(`subscribe ${tag}`);
     const existing = subscribers.find((s) => s.id === id);
     if (existing) {
       existing.time = Date.now();
@@ -105,7 +112,7 @@ client.on("ready", async () => {
   }
 
   async function unsubscribe({ id, tag }) {
-    console.info(`unsubscribe ${tag}`);
+    log.info(`unsubscribe ${tag}`);
     subscribers = subscribers.filter((s) => s.id !== id);
     for (const [, reaction] of message.reactions.cache) {
       await reaction.users.fetch();
@@ -119,9 +126,9 @@ client.on("ready", async () => {
 
   // Update server stats every minute
   schedule.scheduleJob("*/1 * * * *", async () => {
-    await update();
     serverStats = await fetchServerStats();
     message = await message.edit(embed());
+    await update();
 
     if (
       subscribers.length > 0 &&
@@ -133,14 +140,14 @@ client.on("ready", async () => {
           `We hope to see you on the battlefield.\n${pings}`
       );
       for (const subscriber of subscribers) {
-        unsubscribe(subscriber);
+        await unsubscribe(subscriber);
       }
     }
 
     // filter out expired subscriptions
     for (const subscriber of subscribers) {
       if (Date.now() - subscriber.time > oneHourMiliseconds) {
-        unsubscribe(subscriber);
+        await unsubscribe(subscriber);
       }
     }
 
