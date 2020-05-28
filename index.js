@@ -11,7 +11,7 @@ const emojis = {
   thumbsup: "👍", // for testing
 };
 
-const minPlayers = process.env.BOT_MIN_PLAYERS || 20;
+const minPlayers = parseInt(process.env.BOT_MIN_PLAYERS, 10) || 20;
 const oneHourMiliseconds = 3600000;
 const channelId = process.env.BOT_CHANNEL_ID;
 
