@@ -1,15 +1,4 @@
 const Discord = require("discord.js");
-const schedule = require("node-schedule");
-const fetch = require("node-fetch");
-const { transports, createLogger, format } = require("winston");
-const client = new Discord.Client();
-require("dotenv").config();
-
-const log = createLogger({
-  level: "info",
-  format: format.combine(format.timestamp(), format.json()),
-  transports: [new transports.Console()],
-});
 
 const emojis = {
   terran: "444448298657513482",
@@ -22,15 +11,12 @@ const minPlayers = parseInt(process.env.BOT_MIN_PLAYERS, 10) || 20;
 const oneHourMiliseconds = 3600000;
 const channelId = process.env.BOT_CHANNEL_ID;
 
-client.login(process.env.BOT_TOKEN);
-
-client.on("ready", async () => {
-  log.info(`logged in as ${client.user.tag}`);
-
+module.exports = async function ({ client, statsEmitter, log }) {
   const channel = await client.channels.fetch(channelId);
-  let serverStats = await fetchServerStats();
+
   let subscribers = [];
   let message = null;
+  let stats = await statsEmitter.fetch();
 
   const embedMessages = (await channel.messages.fetch({ limit: 10 })).filter(
     (m) => m.author.id === client.user.id && m.embeds.length > 0
@@ -46,12 +32,60 @@ client.on("ready", async () => {
   await message.react(emojis.newcon);
   await message.react(emojis.vanu);
 
+  // Update server stats and subscriptions every minute
+  statsEmitter.on("update", async (newStats) => {
+    if (
+      newStats.empires.TR !== stats.empires.TR ||
+      newStats.empires.NC !== stats.empires.NC ||
+      newStats.empires.VS !== stats.empires.VS
+    ) {
+      stats = newStats;
+      message = await message.edit(embed());
+    } else {
+      message = await message.fetch();
+    }
+    await updateSubscriptions();
+
+    if (
+      subscribers.length > 0 &&
+      subscribers.length + stats.players.length >= minPlayers
+    ) {
+      const pings = subscribers.map((s) => `<@${s.id}>`).join(" ");
+      await channel.send(
+        `Your shuttle has arrived! ${subscribers.length} players are ready to play and ${stats.players.length} players are already online. ` +
+          `We hope to see you on the battlefield.\n${pings}`
+      );
+      for (const subscriber of subscribers) {
+        await unsubscribe(subscriber);
+      }
+      log.info(`notified ${pings}`);
+    }
+
+    // filter out expired subscriptions
+    for (const subscriber of subscribers) {
+      if (Date.now() - subscriber.time > oneHourMiliseconds) {
+        await unsubscribe(subscriber);
+      }
+    }
+
+    // clear notifications after 10 minutes
+    const oldMessages = (await channel.messages.fetch({ limit: 10 })).filter(
+      (m) =>
+        m.author.id === client.user.id &&
+        m.embeds.length === 0 &&
+        Date.now() - m.createdTimestamp > oneHourMiliseconds / 10
+    );
+    for (const [, oldMessage] of oldMessages) {
+      await oldMessage.delete();
+    }
+  });
+
   function embed() {
     const newMessage = new Discord.MessageEmbed().setURL(
       "https://play.psforever.net"
     );
 
-    if (serverStats.status !== "UP") {
+    if (stats.status !== "UP") {
       return newMessage.setColor("#ff0000").setTitle("Server is Offline");
     }
 
@@ -64,8 +98,8 @@ client.on("ready", async () => {
       )
       .setTitle("Server is Online")
       .setDescription(
-        `**Online Players: ${serverStats.players.length} (${serverStats.empires.TR} <:terran:${emojis.terran}> ` +
-          `${serverStats.empires.NC} <:newcon:${emojis.newcon}> ${serverStats.empires.VS} <:vanu:${emojis.vanu}>)**`
+        `**Online Players: ${stats.players.length} (${stats.empires.TR} <:terran:${emojis.terran}> ` +
+          `${stats.empires.NC} <:newcon:${emojis.newcon}> ${stats.empires.VS} <:vanu:${emojis.vanu}>)**`
       )
       .addFields({
         name: "Want to start a battle?",
@@ -83,7 +117,7 @@ client.on("ready", async () => {
           user.id !== client.user.id &&
           !subscribers.find((s) => s.id === user.id)
         ) {
-          if (serverStats.players.length + 1 <= minPlayers) {
+          if (stats.players.length < minPlayers) {
             await subscribe(user);
           } else {
             // server has plenty of online players, go away
@@ -125,57 +159,4 @@ client.on("ready", async () => {
       }
     }
   }
-
-  // Update server stats and subscriptions every minute
-  schedule.scheduleJob("*/1 * * * *", async () => {
-    const newStats = await fetchServerStats();
-    if (
-      newStats.empires.TR !== serverStats.empires.TR ||
-      newStats.empires.NC !== serverStats.empires.NC ||
-      newStats.empires.VS !== serverStats.empires.VS
-    ) {
-      serverStats = newStats;
-      message = await message.edit(embed());
-    } else {
-      message = await message.fetch();
-    }
-    await updateSubscriptions();
-
-    if (
-      subscribers.length > 0 &&
-      subscribers.length + serverStats.players.length >= minPlayers
-    ) {
-      const pings = subscribers.map((s) => `<@${s.id}>`).join(" ");
-      await channel.send(
-        `Your shuttle has arrived! ${subscribers.length} players are ready to play and ${serverStats.players.length} players are already online. ` +
-          `We hope to see you on the battlefield.\n${pings}`
-      );
-      for (const subscriber of subscribers) {
-        await unsubscribe(subscriber);
-      }
-    }
-
-    // filter out expired subscriptions
-    for (const subscriber of subscribers) {
-      if (Date.now() - subscriber.time > oneHourMiliseconds) {
-        await unsubscribe(subscriber);
-      }
-    }
-
-    // clear notifications after 10 minutes
-    const oldMessages = (await channel.messages.fetch({ limit: 10 })).filter(
-      (m) =>
-        m.author.id === client.user.id &&
-        m.embeds.length === 0 &&
-        Date.now() - m.createdTimestamp > oneHourMiliseconds / 10
-    );
-    for (const [, oldMessage] of oldMessages) {
-      await oldMessage.delete();
-    }
-  });
-});
-
-async function fetchServerStats() {
-  const res = await fetch("https://play.psforever.net/api/stats");
-  return await res.json();
-}
+};
