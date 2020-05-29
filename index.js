@@ -47,8 +47,8 @@ client.on("ready", async () => {
   await message.react(emojis.vanu);
 
   function embed() {
-    const newMessage = new Discord.MessageEmbed().setThumbnail(
-      "https://psforever.net/index_files/logo_crop.png"
+    const newMessage = new Discord.MessageEmbed().setURL(
+      "https://play.psforever.net"
     );
 
     if (serverStats.status !== "UP") {
@@ -57,22 +57,20 @@ client.on("ready", async () => {
 
     return newMessage
       .setColor("#0099ff")
-      .setTitle("Server is Online")
-      .setURL("https://play.psforever.net")
-      .setDescription(
-        `**Online Players: ${serverStats.players.length}** (${serverStats.empires.TR} <:terran:${emojis.terran}> ${serverStats.empires.NC} <:newcon:${emojis.newcon}> ${serverStats.empires.VS} <:vanu:${emojis.vanu}>)`
+      .setAuthor(
+        "How to play",
+        "https://psforever.net/index_files/logo_crop.png",
+        "https://docs.google.com/document/d/1ZMx1NUylVZCXJNRyhkuVWT0eUKSVYu0JXsU-y3f93BY/edit"
       )
-      .addFields(
-        {
-          name: "How to play",
-          value:
-            "[PSForever setup guide](https://docs.google.com/document/d/1ZMx1NUylVZCXJNRyhkuVWT0eUKSVYu0JXsU-y3f93BY/edit)",
-        },
-        {
-          name: "Not enough players?",
-          value: `React with your empire icon and we will notify you if at least ${minPlayers} players express interest within the next hour.`,
-        }
-      );
+      .setTitle("Server is Online")
+      .setDescription(
+        `**Online Players: ${serverStats.players.length} (${serverStats.empires.TR} <:terran:${emojis.terran}> ` +
+          `${serverStats.empires.NC} <:newcon:${emojis.newcon}> ${serverStats.empires.VS} <:vanu:${emojis.vanu}>)**`
+      )
+      .addFields({
+        name: "Want to start a battle?",
+        value: `React with your faction of choice and we will notify you if ${minPlayers} players total do the same within the next hour.\n`,
+      });
   }
 
   async function updateSubscriptions() {
@@ -85,33 +83,33 @@ client.on("ready", async () => {
           user.id !== client.user.id &&
           !subscribers.find((s) => s.id === user.id)
         ) {
-          if (serverStats.players.length + 1 < minPlayers) {
-            subscribe(user);
+          if (serverStats.players.length + 1 <= minPlayers) {
+            await subscribe(user);
           } else {
             // server has plenty of online players, go away
-            unsubscribe(user);
+            await unsubscribe(user);
           }
         }
       }
     }
     for (const subscriber of subscribers) {
       if (!active.find((uid) => uid === subscriber.id)) {
-        unsubscribe(subscriber);
+        await unsubscribe(subscriber);
       }
     }
   }
 
-  function subscribe({ id, tag }) {
+  async function subscribe({ id, tag }) {
     log.info(`subscribe ${tag}`);
-    const existing = subscribers.find((s) => s.id === id);
-    if (existing) {
-      existing.time = Date.now();
-    } else {
+    const subscriber = subscribers.find((s) => s.id === id);
+    if (!subscriber) {
       subscribers.push({
         id,
         tag,
         time: Date.now(),
       });
+    } else {
+      subscriber.time = Date.now();
     }
   }
 
