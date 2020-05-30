@@ -30,7 +30,7 @@ module.exports = class Storage {
       } catch (e) {
         log.error(`could not store ${this.key}: ${e.message}`);
       }
-    }, 10);
+    }, 10000);
   }
 
   async restore() {

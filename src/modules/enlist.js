@@ -7,12 +7,20 @@ const emojis = {
   thumbsup: "👍", // for testing
 };
 
-const minPlayers = parseInt(process.env.BOT_MIN_PLAYERS, 10) || 20;
 const oneHourMiliseconds = 3600000;
-const channelId = process.env.BOT_CHANNEL_ID;
 
-module.exports = async function ({ client, statsEmitter, log, Storage }) {
-  const channel = await client.channels.fetch(channelId);
+module.exports = async function ({
+  client,
+  statsEmitter,
+  log,
+  config,
+  Storage,
+}) {
+  if (!config.get("enlist.channelId")) {
+    log.warn("channelId not set, skipping initialization");
+    return function () {};
+  }
+  const channel = await client.channels.fetch(config.get("enlist.channelId"));
 
   const store = new Storage("enlist", { subscriptions: [] });
   await store.restore();
@@ -29,12 +37,16 @@ module.exports = async function ({ client, statsEmitter, log, Storage }) {
   } else {
     message = await channel.send(embed());
   }
-  await message.react(emojis.terran);
-  await message.react(emojis.newcon);
-  await message.react(emojis.vanu);
 
-  // Update server stats and subscriptions every minute
-  statsEmitter.on("update", async (newStats) => {
+  try {
+    await message.react(emojis.terran);
+    await message.react(emojis.newcon);
+    await message.react(emojis.vanu);
+  } catch (e) {
+    log.warn(e.message);
+  }
+
+  async function updateHandler(newStats) {
     if (
       newStats.empires.TR !== stats.empires.TR ||
       newStats.empires.NC !== stats.empires.NC ||
@@ -49,7 +61,8 @@ module.exports = async function ({ client, statsEmitter, log, Storage }) {
 
     if (
       store.get("subscriptions").length > 0 &&
-      store.get("subscriptions").length + stats.players.length >= minPlayers
+      store.get("subscriptions").length + stats.players.length >=
+        config.get("enlist.minPlayers")
     ) {
       const pings = store
         .get("subscriptions")
@@ -86,7 +99,7 @@ module.exports = async function ({ client, statsEmitter, log, Storage }) {
     for (const [, oldMessage] of oldMessages) {
       await oldMessage.delete();
     }
-  });
+  }
 
   function embed() {
     const newMessage = new Discord.MessageEmbed().setURL(
@@ -111,7 +124,9 @@ module.exports = async function ({ client, statsEmitter, log, Storage }) {
       )
       .addFields({
         name: "Want to start a battle?",
-        value: `React with your faction of choice and we will notify you if ${minPlayers} players total do the same within the next hour.\n`,
+        value: `React with your faction of choice and we will notify you if ${config.get(
+          "enlist.minPlayers"
+        )} players total do the same within the next hour.\n`,
       });
   }
 
@@ -131,7 +146,7 @@ module.exports = async function ({ client, statsEmitter, log, Storage }) {
           user.id !== client.user.id &&
           !store.get("subscriptions").find((s) => s.id === user.id)
         ) {
-          if (stats.players.length < minPlayers) {
+          if (stats.players.length < config.get("enlist.minPlayers")) {
             await subscribe(user);
           } else {
             // server has plenty of online players, go away
@@ -178,9 +193,14 @@ module.exports = async function ({ client, statsEmitter, log, Storage }) {
       await reaction.users.fetch();
       for (const [, user] of reaction.users.cache) {
         if (user.id === id) {
-          reaction.users.remove(id);
+          await reaction.users.remove(id);
         }
       }
     }
   }
+
+  statsEmitter.on("update", updateHandler);
+  return function () {
+    statsEmitter.off("update", updateHandler);
+  };
 };

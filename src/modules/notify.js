@@ -139,7 +139,7 @@ module.exports = async function ({ client, log, statsEmitter, Storage }) {
   const store = new Storage("notify", { subscriptions: [] });
   await store.restore();
 
-  client.on("message", async (message) => {
+  async function messageHandler(message) {
     const parsed = parser.parse(message, "!", { allowBots: false });
     if (!parsed.success || parsed.command !== "notify") return;
 
@@ -167,8 +167,7 @@ module.exports = async function ({ client, log, statsEmitter, Storage }) {
       default:
         message.reply("Unknown command. See `!notify help` for usage.");
     }
-  });
-
+  }
   async function status(user) {
     const subscription = store
       .get("subscriptions")
@@ -224,7 +223,7 @@ module.exports = async function ({ client, log, statsEmitter, Storage }) {
     user.send("You are now unsubscribed.");
   }
 
-  statsEmitter.on("update", async (stats) => {
+  async function updateHandler(stats) {
     const totalPlayers = stats.players.length;
     for (const [idx, subscription] of Object.entries(
       store.get("subscriptions")
@@ -269,5 +268,12 @@ module.exports = async function ({ client, log, statsEmitter, Storage }) {
       subscriptions[idx].lastNotification = Date.now();
       store.set("subscriptions", subscriptions);
     }
-  });
+  }
+
+  statsEmitter.on("update", updateHandler);
+  client.on("message", messageHandler);
+  return function () {
+    client.off("message", messageHandler);
+    statsEmitter.off("update", updateHandler);
+  };
 };

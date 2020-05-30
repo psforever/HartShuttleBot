@@ -1,6 +1,6 @@
-# PSForeverBot
+# HartShuttleBot
 
-A Discord bot to get people playing PSForever.
+A Discord bot for PSForever.
 
 ## Run
 
@@ -21,5 +21,3 @@ https://discordapp.com/oauth2/authorize?client_id=your_client_id&scope=bot
 * `S3_ACCESS_KEY_ID`: S3 access key ID (required)
 * `S3_ACCESS_KEY`: S3 access key (required)
 * `S3_BUCKET_NAME`: S3 bucket name (required)
-* `BOT_CHANNEL_ID`: Discord channel ID (required)
-* `BOT_MIN_PLAYERS`: Min number of players that trigger a notification (default 20)
