@@ -78,10 +78,14 @@ const askTimezone = new PromptNode(
 const askWeekdayTimeframes = new PromptNode(
   new DiscordPrompt(
     new MessageVisual(
-      `During which time frame do you want to get notified on **weekdays**? Use the 24-hour time format. For example \`17:00-22:00\` to get notified during the evenings.`
+      `During which time frame do you want to get notified on **weekdays**? Use the 24-hour time format. For example \`17:00-22:00\` to get notified during the evenings or \`00:00-24:00\` to get notified at any time.`
     ),
     async (m, data) => {
-      const parts = m.content.split("-");
+      let parts = m.content.split("-");
+      // 24:00 doesn't technically exist so we convert it to 23:59:59
+      if (parts[1] === "24:00") {
+        parts = [parts[0], "23:59:59"];
+      }
       try {
         let from = LocalTime.parse(parts[0]);
         let to = LocalTime.parse(parts[1]);
@@ -107,10 +111,14 @@ const askWeekdayTimeframes = new PromptNode(
 const askWeekendTimeframes = new PromptNode(
   new DiscordPrompt(
     new MessageVisual(
-      `During which time frame do you want to get notified on **weekends**? Use the 24-hour time format. For example \`17:00-22:00\` to get notified during the evenings.`
+      `During which time frame do you want to get notified on **weekends**? Use the 24-hour time format. For example \`17:00-22:00\` to get notified during the evenings or \`00:00-24:00\` to get notified at any time.`
     ),
     async (m, data) => {
-      const parts = m.content.split("-");
+      let parts = m.content.split("-");
+      // 24:00 doesn't technically exist so we convert it to 23:59:59
+      if (parts[1] === "24:00") {
+        parts = [parts[0], "23:59:59"];
+      }
       try {
         let from = LocalTime.parse(parts[0]);
         let to = LocalTime.parse(parts[1]);
@@ -205,7 +213,9 @@ module.exports = async function ({ client, log, statsEmitter, Storage }) {
             },
           ])
       );
-      dmChannel.send(`You are subscribed. Thank you!`);
+      dmChannel.send(
+        `You are subscribed. To update your settings, simply run \`!notify subscribe\` again. To remove your subscription, run \`!notify unsubscribe\`.`
+      );
     } catch (error) {
       log.error(`error during signup dialog: ${error.message}`);
       dmChannel.send(`Sorry, an unexpected error occured: ${error.message}`);
