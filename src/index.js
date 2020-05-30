@@ -27,7 +27,7 @@ client.on("ready", async () => {
 
   client.on("message", async function (message) {
     const parsed = parser.parse(message, "!", { allowBots: false });
-    if (!parsed.success || parsed.command !== "hart") return;
+    if (!parsed.success || parsed.command !== "hart" || !message.member) return;
 
     switch (parsed.reader.getString()) {
       case "help":
@@ -40,6 +40,15 @@ client.on("ready", async () => {
         );
         break;
       case "config":
+        if (
+          !message.member.roles.cache.find(
+            (role) =>
+              role.permissions.has(Discord.Permissions.FLAGS.ADMINISTRATOR) ||
+              role.id === 152125259741528064 // Developers
+          )
+        ) {
+          return message.reply("you do not have permission to do that.");
+        }
         switch (parsed.reader.getString()) {
           case "set": {
             const path = parsed.reader.getString();
@@ -53,7 +62,7 @@ client.on("ready", async () => {
               default:
                 throw new Error("Unknown type.");
             }
-            message.reply("Value set.");
+            message.reply("value set.");
             reloadModules();
             break;
           }
@@ -61,11 +70,11 @@ client.on("ready", async () => {
             message.reply(`\n${JSON.stringify(config.get())}`);
             break;
           default:
-            message.reply("Unknown command.");
+            message.reply("Unknown command, see `!hart help`.");
         }
         break;
       default:
-        message.reply("Unknown command.");
+        message.reply("Unknown command, see `!hart help`.");
     }
   });
 
