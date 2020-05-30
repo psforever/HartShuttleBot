@@ -119,6 +119,12 @@ module.exports = async function ({ client, statsEmitter, log, Storage }) {
     const active = [];
     for (const [, reaction] of message.reactions.cache) {
       await reaction.users.fetch();
+
+      if (!Object.values(emojis).find((id) => id === reaction.emoji.id)) {
+        await reaction.remove();
+        continue;
+      }
+
       for (const [, user] of reaction.users.cache) {
         active.push(user.id);
         if (
@@ -171,7 +177,7 @@ module.exports = async function ({ client, statsEmitter, log, Storage }) {
     for (const [, reaction] of message.reactions.cache) {
       await reaction.users.fetch();
       for (const [, user] of reaction.users.cache) {
-        if (user.id !== id) {
+        if (user.id === id) {
           reaction.users.remove(id);
         }
       }
