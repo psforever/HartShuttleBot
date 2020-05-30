@@ -11,10 +11,11 @@ const minPlayers = parseInt(process.env.BOT_MIN_PLAYERS, 10) || 20;
 const oneHourMiliseconds = 3600000;
 const channelId = process.env.BOT_CHANNEL_ID;
 
-module.exports = async function ({ client, statsEmitter, log }) {
+module.exports = async function ({ client, statsEmitter, log, Storage }) {
   const channel = await client.channels.fetch(channelId);
 
-  let subscribers = [];
+  const store = new Storage("enlist", { subscriptions: [] });
+  await store.restore();
   let message = null;
   let stats = await statsEmitter.fetch();
 
@@ -47,24 +48,31 @@ module.exports = async function ({ client, statsEmitter, log }) {
     await updateSubscriptions();
 
     if (
-      subscribers.length > 0 &&
-      subscribers.length + stats.players.length >= minPlayers
+      store.get("subscriptions").length > 0 &&
+      store.get("subscriptions").length + stats.players.length >= minPlayers
     ) {
-      const pings = subscribers.map((s) => `<@${s.id}>`).join(" ");
+      const pings = store
+        .get("subscriptions")
+        .map((s) => `<@${s.id}>`)
+        .join(" ");
       await channel.send(
-        `Your shuttle has arrived! ${subscribers.length} players are ready to play and ${stats.players.length} players are already online. ` +
+        `Your shuttle has arrived! ${
+          store.get("subscriptions").length
+        } players are ready to play and ${
+          stats.players.length
+        } players are already online. ` +
           `We hope to see you on the battlefield.\n${pings}`
       );
-      for (const subscriber of subscribers) {
-        await unsubscribe(subscriber);
+      for (const subscription of store.get("subscriptions")) {
+        await unsubscribe(subscription);
       }
       log.info(`notified ${pings}`);
     }
 
     // filter out expired subscriptions
-    for (const subscriber of subscribers) {
-      if (Date.now() - subscriber.time > oneHourMiliseconds) {
-        await unsubscribe(subscriber);
+    for (const subscription of store.get("subscriptions")) {
+      if (Date.now() - subscription.time > oneHourMiliseconds) {
+        await unsubscribe(subscription);
       }
     }
 
@@ -115,7 +123,7 @@ module.exports = async function ({ client, statsEmitter, log }) {
         active.push(user.id);
         if (
           user.id !== client.user.id &&
-          !subscribers.find((s) => s.id === user.id)
+          !store.get("subscriptions").find((s) => s.id === user.id)
         ) {
           if (stats.players.length < minPlayers) {
             await subscribe(user);
@@ -126,30 +134,40 @@ module.exports = async function ({ client, statsEmitter, log }) {
         }
       }
     }
-    for (const subscriber of subscribers) {
-      if (!active.find((uid) => uid === subscriber.id)) {
-        await unsubscribe(subscriber);
+    for (const subscription of store.get("subscriptions")) {
+      if (!active.find((uid) => uid === subscription.id)) {
+        await unsubscribe(subscription);
       }
     }
   }
 
   async function subscribe({ id, tag }) {
     log.info(`subscribe ${tag}`);
-    const subscriber = subscribers.find((s) => s.id === id);
-    if (!subscriber) {
-      subscribers.push({
-        id,
-        tag,
-        time: Date.now(),
-      });
+    const subscriptions = store.get("subscriptions");
+    const idx = subscriptions.findIndex((s) => s.id === id);
+    if (idx === -1) {
+      store.set(
+        "subscriptions",
+        subscriptions.concat([
+          {
+            id,
+            tag,
+            time: Date.now(),
+          },
+        ])
+      );
     } else {
-      subscriber.time = Date.now();
+      subscriptions[idx].time = Date.now();
+      store.set("subscriptions", subscriptions);
     }
   }
 
   async function unsubscribe({ id, tag }) {
     log.info(`unsubscribe ${tag}`);
-    subscribers = subscribers.filter((s) => s.id !== id);
+    store.set(
+      "subscriptions",
+      store.get("subscriptions").filter((s) => s.id !== id)
+    );
     for (const [, reaction] of message.reactions.cache) {
       await reaction.users.fetch();
       for (const [, user] of reaction.users.cache) {

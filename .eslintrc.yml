@@ -1,7 +1,7 @@
 extends:
   - plugin:github/recommended
 parserOptions:
-  ecmaVersion: 2017
+  ecmaVersion: 10
 env:
   node: true
 rules:
