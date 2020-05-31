@@ -18,8 +18,11 @@ const defaultConfig = {
     minPlayers: 20,
     channelId: "",
   },
+  report: {
+    channelId: "",
+  },
 };
-// 152125259741528064
+
 client.on("ready", async () => {
   log.info(`logged in as ${client.user.tag}`);
 

@@ -33,7 +33,7 @@ const askPlayers = new PromptNode(
         throw new Rejection("Please enter a higher number (5 or higher).");
       return {
         ...data,
-        players: parseInt(m.content, 10),
+        players,
       };
     }
   )
@@ -208,8 +208,7 @@ module.exports = async function ({ client, log, statsEmitter, Storage }) {
               ...data,
               id: user.id,
               tag: user.tag,
-              //lastNotification: Date.now(), <- TODO RESTORE AFTER TESTING
-              lastNotification: 0,
+              lastNotification: Date.now(),
             },
           ])
       );

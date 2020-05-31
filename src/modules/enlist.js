@@ -124,7 +124,7 @@ module.exports = async function ({
       )
       .addFields({
         name: "Want to subscribe to battle alerts?",
-        value: `Direct message <@${client.user.id}> on Discord with \`!alert subscribe\` to get started.`,
+        value: `Direct message <@${client.user.id}> with \`!alert subscribe\` to get started.`,
       })
       .addFields({
         name: "Want to start a battle?",
