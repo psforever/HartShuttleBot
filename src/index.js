@@ -97,7 +97,9 @@ client.on("ready", async () => {
             break;
           }
           case "dump":
-            message.reply(`\n${JSON.stringify(config.get())}`);
+            message.reply(
+              `\n\`\`\`json\n${JSON.stringify(config.get(), null, 2)}\n\`\`\``
+            );
             break;
           default:
             message.reply("Unknown command, see `!hart help`.");
