@@ -1,0 +1,16 @@
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  Build-and-Push-Docker-Image:
+    runs-on: ubuntu-latest
+    name: Docker Build, Tag, Push
+
+    steps:
+    - name: Build, Tag, Push
+      uses: mattdavis0351/actions/docker-gpr@v1.3.0
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        image-name: hartshuttlebot
