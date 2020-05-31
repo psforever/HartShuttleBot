@@ -5,7 +5,7 @@ module.exports = async function ({ client, config, log }) {
     log.warn("channelId not set, skipping initialization");
     return function () {};
   }
-  const channel = await client.channels.fetch(config.get("enlist.channelId"));
+  const channel = await client.channels.fetch(config.get("report.channelId"));
 
   async function messageHandler(message) {
     const parsed = parser.parse(message, "!", { allowBots: false });
