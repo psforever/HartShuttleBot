@@ -11,17 +11,11 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2.2.0
-    - name: Build, Tag, Push to GPR
-      uses: machine-learning-apps/gpr-docker-publish@v1.3
+    - name: Build, Tag, Push
+      uses: docker/build-push-action@v1.1.0
       with:
-        TAG: latest
-        IMAGE_NAME: hartshuttlebot
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - name: Show docker push outputs
-      run: |
-        echo "The name:tag of the Docker Image is: $VAR1"
-        echo "The docker image is hosted at $VAR2"
-      env:
-        VAR1: ${{ steps.docker.outputs.IMAGE_SHA_NAME }}
-        VAR2: ${{ steps.docker.outputs.IMAGE_URL }}
+        username: $GITHUB_ACTOR
+        password: ${{ secrets.GITHUB_TOKEN }}
+        repository: docker.pkg.github.com/psforever/hartshuttlebot
+        tags: latest
+        tag_with_sha: true
