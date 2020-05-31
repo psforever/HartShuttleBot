@@ -14,6 +14,7 @@ jobs:
     - name: Build, Tag, Push
       uses: docker/build-push-action@v1.1.0
       with:
+        username: "none"
         password: ${{ secrets.GITHUB_TOKEN }}
         repository: docker.pkg.github.com/psforever/hartshuttlebot
         tags: latest
