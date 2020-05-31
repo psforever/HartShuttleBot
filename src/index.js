@@ -1,3 +1,4 @@
+require("./sentry");
 require("dotenv").config();
 const parser = require("discord-command-parser");
 const fs = require("fs");
