@@ -13,12 +13,13 @@ const statsEmitter = new StatsEmitter();
 client.login(process.env.DISCORD_TOKEN);
 
 const defaultConfig = {
+  permittedRoles: [],
   enlist: {
     minPlayers: 20,
     channelId: "",
   },
 };
-
+// 152125259741528064
 client.on("ready", async () => {
   log.info(`logged in as ${client.user.tag}`);
 
@@ -36,7 +37,9 @@ client.on("ready", async () => {
             `**!hart config set <path> <value>**\n` +
             `Set a config value.\n` +
             `**!hart config dump**\n` +
-            `Print the current configuration.`
+            `Print the current configuration.\n\n` +
+            `Using config commands requires a role in the \`permittedRoles\` config or to be administrator.\n` +
+            `Only a administrator can set \`permittedRoles\`.`
         );
         break;
       case "config":
@@ -44,7 +47,7 @@ client.on("ready", async () => {
           !message.member.roles.cache.find(
             (role) =>
               role.permissions.has(Discord.Permissions.FLAGS.ADMINISTRATOR) ||
-              role.id === 152125259741528064 // Developers
+              config.get("permittedRoles").find((p) => p === role.id)
           )
         ) {
           return message.reply("you do not have permission to do that.");
@@ -52,12 +55,36 @@ client.on("ready", async () => {
         switch (parsed.reader.getString()) {
           case "set": {
             const path = parsed.reader.getString();
+            if (
+              path === "permittedRoles" &&
+              !message.member.roles.cache.find((role) =>
+                role.permissions.has(Discord.Permissions.FLAGS.ADMINISTRATOR)
+              )
+            ) {
+              return message.reply("only admin can change permittedRoles.");
+            }
+            const value = parsed.reader.getString();
+            if (value === null) {
+              return message.reply("missing value.");
+            }
+            if (parsed.reader.getString() !== null) {
+              return message.reply(
+                'multiple values are not allowed. For arrays use `"one two three"`.'
+              );
+            }
             switch (typeof immutable.get(defaultConfig, path)) {
               case "string":
-                config.set(path, parsed.reader.getString());
+                config.set(path, value);
                 break;
               case "number":
-                config.set(path, parseInt(parsed.reader.getString(), 10));
+                config.set(path, parseInt(value, 10));
+                break;
+              case "object":
+                if (Array.isArray(immutable.get(defaultConfig, path))) {
+                  config.set(path, value.split(" "));
+                } else {
+                  return message.reply("bad value.");
+                }
                 break;
               default:
                 return message.reply("bad value.");
