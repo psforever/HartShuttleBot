@@ -1,21 +1,18 @@
 on:
   push:
-    branches:
-      - master
+    branches: [ master ]
 
 jobs:
-  Build-and-Push-Docker-Image:
+  build:
     runs-on: ubuntu-latest
-    name: Docker Build, Tag, Push
-
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2.2.0
-    - name: Build, Tag, Push
+    - uses: actions/checkout@v2
+    - name: Build and push Docker images
       uses: docker/build-push-action@v1.1.0
       with:
-        username: $GITHUB_ACTOR
-        password: ${{ secrets.GITHUB_TOKEN }}
-        repository: docker.pkg.github.com/psforever/hartshuttlebot
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+        registry: docker.pkg.github.com
+        repository: psforever/hartshuttlebot/hartshuttlebot
         tags: latest
         tag_with_sha: true
