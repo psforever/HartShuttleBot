@@ -9,6 +9,8 @@ jobs:
     name: Docker Build, Tag, Push
 
     steps:
+    - name: Checkout
+      uses: actions/checkout@v1
     - name: Build, Tag, Push
       uses: mattdavis0351/actions/docker-gpr@v1.3.0
       with:
