@@ -123,8 +123,12 @@ module.exports = async function ({
           `${stats.empires.NC} <:newcon:${emojis.newcon}> ${stats.empires.VS} <:vanu:${emojis.vanu}>)**`
       )
       .addFields({
+        name: "Want to subscribe to battle alerts?",
+        value: `Direct message <@${client.user.id}> on Discord with \`!alert subscribe\` to get started.`,
+      })
+      .addFields({
         name: "Want to start a battle?",
-        value: `React with your faction of choice and we will notify you if ${config.get(
+        value: `React with your faction of choice and we will alert you if ${config.get(
           "enlist.minPlayers"
         )} players total do the same within the next hour.\n`,
       });

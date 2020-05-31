@@ -42,7 +42,7 @@ const askPlayers = new PromptNode(
 const askCharacters = new PromptNode(
   new DiscordPrompt(
     new MessageVisual(
-      `What are your character names? We will not notify you if you are online on any of them. Separate them with spaces.`
+      `What are your character names? We will not alert you if you are online on any of them. Separate them with spaces.`
     ),
     async (m, data) => {
       const characters = m.content.split(" ");
@@ -144,22 +144,22 @@ askTimezone.addChild(askWeekdayTimeframes);
 askWeekdayTimeframes.addChild(askWeekendTimeframes);
 
 module.exports = async function ({ client, log, statsEmitter, Storage }) {
-  const store = new Storage("notify", { subscriptions: [] });
+  const store = new Storage("alert", { subscriptions: [] });
   await store.restore();
 
   async function messageHandler(message) {
     const parsed = parser.parse(message, "!", { allowBots: false });
-    if (!parsed.success || parsed.command !== "notify") return;
+    if (!parsed.success || parsed.command !== "alert") return;
 
     switch (parsed.reader.getString()) {
       case "help":
         message.reply(
-          `The !notify command is used to set up a permanent subscription to online player notifications.\n` +
-            `**!notify subscribe**\n` +
+          `The !alert command is used to set up a permanent subscription to online player notifications.\n` +
+            `**!alert subscribe**\n` +
             `Create or update a subscription.\n` +
-            `**!notify status**\n` +
+            `**!alert status**\n` +
             `Show your current subscription status.\n` +
-            `**!notify unsubscribe**\n` +
+            `**!alert unsubscribe**\n` +
             `Remove your subscription.`
         );
         break;
@@ -173,7 +173,7 @@ module.exports = async function ({ client, log, statsEmitter, Storage }) {
         unsubscribe(message.author);
         break;
       default:
-        message.reply("Unknown command. See `!notify help` for usage.");
+        message.reply("Unknown command. See `!alert help` for usage.");
     }
   }
   async function status(user) {
@@ -214,7 +214,7 @@ module.exports = async function ({ client, log, statsEmitter, Storage }) {
           ])
       );
       dmChannel.send(
-        `You are subscribed. To update your settings, simply run \`!notify subscribe\` again. To remove your subscription, run \`!notify unsubscribe\`.`
+        `You are subscribed. To update your settings, simply run \`!alert subscribe\` again. To remove your subscription, run \`!alert unsubscribe\`.`
       );
     } catch (error) {
       log.error(`error during signup dialog: ${error.message}`);
@@ -243,7 +243,7 @@ module.exports = async function ({ client, log, statsEmitter, Storage }) {
         .truncatedTo(ChronoUnit.DAYS)
         .plusNanos(
           LocalTime.parse(
-            subscription.timeframes[now.dayOfWeek().value()][0]
+            subscription.timeframes[now.dayOfWeek().value() - 1][0]
           ).toNanoOfDay()
         )
         .atZone(ZoneId.of(subscription.timezone));
@@ -251,7 +251,7 @@ module.exports = async function ({ client, log, statsEmitter, Storage }) {
         .truncatedTo(ChronoUnit.DAYS)
         .plusNanos(
           LocalTime.parse(
-            subscription.timeframes[now.dayOfWeek().value()][1]
+            subscription.timeframes[now.dayOfWeek().value() - 1][1]
           ).toNanoOfDay()
         )
         .atZone(ZoneId.of(subscription.timezone));
@@ -268,11 +268,11 @@ module.exports = async function ({ client, log, statsEmitter, Storage }) {
       ) {
         continue;
       }
-      log.info(`notify ${subscription.tag}`);
+      log.info(`alert ${subscription.tag}`);
       const user = await client.users.fetch(subscription.id);
       user.send(
         `${totalPlayers} players are online on PSForever. Join the battle now!\n` +
-          `You subscribed to this message. To unsubscribe, reply with \`!notify unsubscribe\`.`
+          `You subscribed to this message. To unsubscribe, reply with \`!alert unsubscribe\`.`
       );
       const subscriptions = store.get("subscriptions");
       subscriptions[idx].lastNotification = Date.now();

@@ -60,7 +60,7 @@ client.on("ready", async () => {
                 config.set(path, parseInt(parsed.reader.getString(), 10));
                 break;
               default:
-                throw new Error("Unknown type.");
+                return message.reply("bad value.");
             }
             message.reply("value set.");
             reloadModules();
