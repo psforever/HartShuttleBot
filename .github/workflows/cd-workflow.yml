@@ -10,9 +10,11 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v1
+      uses: actions/checkout@v2.2.0
     - name: Build, Tag, Push
-      uses: mattdavis0351/actions/docker-gpr@v1.3.0
+      uses: docker/build-push-action@v1.1.0
       with:
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
-        image-name: hartshuttlebot
+        password: ${{ secrets.GITHUB_TOKEN }}
+        repository: docker.pkg.github.com/psforever/hartshuttlebot
+        tags: latest
+        tag_with_sha: true
