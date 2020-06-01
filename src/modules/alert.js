@@ -138,10 +138,19 @@ const askWeekendTimeframes = new PromptNode(
   )
 );
 
+const success = new PromptNode(
+  new DiscordPrompt(() => {
+    return new MessageVisual(
+      `You are subscribed. To update your settings, simply run \`!alert subscribe\` again. To remove your subscription, run \`!alert unsubscribe\`.`
+    );
+  })
+);
+
 askPlayers.addChild(askCharacters);
 askCharacters.addChild(askTimezone);
 askTimezone.addChild(askWeekdayTimeframes);
 askWeekdayTimeframes.addChild(askWeekendTimeframes);
+askWeekendTimeframes.addChild(success);
 
 module.exports = async function ({ client, log, statsEmitter, Storage }) {
   const store = new Storage("alert", { subscriptions: [] });
@@ -190,12 +199,11 @@ module.exports = async function ({ client, log, statsEmitter, Storage }) {
 
   async function subscribe(user) {
     const runner = new DiscordPromptRunner(user, {});
-    const dmChannel = await user.createDM();
     try {
-      const data = await runner.run(askPlayers, dmChannel);
+      const data = await runner.run(askPlayers, await user.createDM());
       // TODO this happens when the dialog times out.
       // we need a better approach here
-      if (!data.timeframes) {
+      if (!data.timeframes || data.timeframes.length !== 7) {
         return;
       }
       store.set(
@@ -212,12 +220,8 @@ module.exports = async function ({ client, log, statsEmitter, Storage }) {
             },
           ])
       );
-      dmChannel.send(
-        `You are subscribed. To update your settings, simply run \`!alert subscribe\` again. To remove your subscription, run \`!alert unsubscribe\`.`
-      );
     } catch (error) {
       log.error(`error during signup dialog: ${error.message}`);
-      dmChannel.send(`Sorry, an unexpected error occured: ${error.message}`);
     }
   }
 
