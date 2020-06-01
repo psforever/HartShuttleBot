@@ -1,13 +1,11 @@
 const Discord = require("discord.js");
-
+const { Duration } = require("@js-joda/core");
 const emojis = {
   terran: "444448298657513482",
   newcon: "231260160511705088",
   vanu: "231260169676390403",
   thumbsup: "👍", // for testing
 };
-
-const oneHourMiliseconds = 3600000;
 
 module.exports = async function ({
   client,
@@ -84,7 +82,7 @@ module.exports = async function ({
 
     // filter out expired subscriptions
     for (const subscription of store.get("subscriptions")) {
-      if (Date.now() - subscription.time > oneHourMiliseconds) {
+      if (Date.now() - subscription.time > Duration.ofHours(2).toMillis()) {
         await unsubscribe(subscription);
       }
     }
@@ -94,7 +92,7 @@ module.exports = async function ({
       (m) =>
         m.author.id === client.user.id &&
         m.embeds.length === 0 &&
-        Date.now() - m.createdTimestamp > oneHourMiliseconds / 10
+        Date.now() - m.createdTimestamp > Duration.ofMinutes(10).toMillis()
     );
     for (const [, oldMessage] of oldMessages) {
       await oldMessage.delete();
@@ -128,9 +126,9 @@ module.exports = async function ({
       })
       .addFields({
         name: "Want to start a battle?",
-        value: `React with your faction of choice and we will alert you if ${config.get(
+        value: `React with your faction of choice and get notified if we get to ${config.get(
           "enlist.minPlayers"
-        )} players total do the same within the next hour.\n`,
+        )} enlisted and online players within the next two hours.\n`,
       });
   }
 

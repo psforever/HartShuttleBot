@@ -5,6 +5,7 @@ const {
   PromptNode,
   DiscordPromptRunner,
   MessageVisual,
+  Errors,
 } = require("discord.js-prompts");
 const jsJoda = require("@js-joda/core");
 require("@js-joda/timezone");
@@ -20,7 +21,8 @@ const {
 const askPlayers = new PromptNode(
   new DiscordPrompt(
     new MessageVisual(
-      `At what player threshold do you want to receive a notification? We recommend to keep this fairly low. 10 is a good choice.`
+      `Welcome to the battle alert subscription setup process. To cancel the setup, respond with \`exit\` at any point.\n` +
+        `At what player threshold do you want to receive a notification? We recommend to keep this fairly low. \`10\` is a good choice.`
     ),
     async (m, data) => {
       const players = parseInt(m.content, 10);
@@ -141,7 +143,8 @@ const askWeekendTimeframes = new PromptNode(
 const success = new PromptNode(
   new DiscordPrompt(() => {
     return new MessageVisual(
-      `You are subscribed. To update your settings, simply run \`!alert subscribe\` again. To remove your subscription, run \`!alert unsubscribe\`.`
+      `Your subscription is now active! To update your settings, simply run \`!alert subscribe\` again. ` +
+        `To remove your subscription, run \`!alert unsubscribe\`.`
     );
   })
 );
@@ -199,13 +202,9 @@ module.exports = async function ({ client, log, statsEmitter, Storage }) {
 
   async function subscribe(user) {
     const runner = new DiscordPromptRunner(user, {});
+    const channel = await user.createDM();
     try {
-      const data = await runner.run(askPlayers, await user.createDM());
-      // TODO this happens when the dialog times out.
-      // we need a better approach here
-      if (!data.timeframes || data.timeframes.length !== 7) {
-        return;
-      }
+      const data = await runner.run(askPlayers, channel);
       store.set(
         "subscriptions",
         store
@@ -221,7 +220,14 @@ module.exports = async function ({ client, log, statsEmitter, Storage }) {
           ])
       );
     } catch (error) {
-      log.error(`error during signup dialog: ${error.message}`);
+      if (error instanceof Errors.UserInactivityError) {
+        channel.send("Signup timed out.");
+      } else if (error instanceof Errors.UserVoluntaryExitError) {
+        channel.send("Signup terminated.");
+      } else {
+        log.error(`error during signup dialog: ${error.message}`);
+        channel.send("An unexpected error occured.");
+      }
     }
   }
 

@@ -32,7 +32,13 @@ client.on("ready", async () => {
 
   client.on("message", async function (message) {
     const parsed = parser.parse(message, "!", { allowBots: false });
-    if (!parsed.success || parsed.command !== "hart" || !message.member) return;
+    if (!parsed.success || parsed.command !== "hart") return;
+
+    if (!message.member) {
+      return message.reply(
+        "The `!hart` command cannot be used in direct messages."
+      );
+    }
 
     switch (parsed.reader.getString()) {
       case "help":
