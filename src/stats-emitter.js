@@ -2,7 +2,7 @@ const EventEmitter = require("events");
 const fetch = require("node-fetch");
 const log = require("./log");
 
-class Stats extends EventEmitter {
+class StatsEmitter extends EventEmitter {
   constructor() {
     super();
     setInterval(async () => {
@@ -20,4 +20,4 @@ class Stats extends EventEmitter {
   }
 }
 
-module.exports = Stats;
+module.exports = StatsEmitter;

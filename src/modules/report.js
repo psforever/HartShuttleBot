@@ -28,7 +28,7 @@ module.exports = async function ({ client, config, log }) {
   }
 
   client.on("message", messageHandler);
-  return function () {
+  return async function () {
     client.off("message", messageHandler);
   };
 };

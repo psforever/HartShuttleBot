@@ -21,7 +21,7 @@ const {
 const askPlayers = new PromptNode(
   new DiscordPrompt(
     new MessageVisual(
-      `Welcome to the battle alert subscription setup process. To cancel the setup, respond with \`exit\` at any point.\n` +
+      `Welcome to the battle alert subscription setup. To cancel, respond with \`exit\` at any point.\n` +
         `At what player threshold do you want to receive a notification? We recommend to keep this fairly low. \`10\` is a good choice.`
     ),
     async (m, data) => {
@@ -291,7 +291,8 @@ module.exports = async function ({ client, log, statsEmitter, Storage }) {
 
   statsEmitter.on("update", updateHandler);
   client.on("message", messageHandler);
-  return function () {
+  return async function () {
+    await store.put();
     client.off("message", messageHandler);
     statsEmitter.off("update", updateHandler);
   };

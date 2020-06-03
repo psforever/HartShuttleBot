@@ -18,19 +18,26 @@ module.exports = class Storage {
   constructor(key, initialValue) {
     this.key = key;
     this.data = initialValue || {};
-    this.put = debounce(async () => {
-      try {
-        await s3
-          .putObject({
-            Bucket: bucketName,
-            Key: `${prefix}/${this.key}.json`,
-            Body: JSON.stringify(this.data),
-          })
-          .promise();
-      } catch (e) {
-        log.error(`could not store ${this.key}: ${e.message}`);
-      }
+    this.changed = false;
+    this.debouncePut = debounce(async () => {
+      await this.put();
     }, 10000);
+  }
+
+  async put() {
+    if (!this.changed) return;
+    try {
+      await s3
+        .putObject({
+          Bucket: bucketName,
+          Key: `${prefix}/${this.key}.json`,
+          Body: JSON.stringify(this.data),
+        })
+        .promise();
+      this.changed = false;
+    } catch (e) {
+      log.error(`could not store ${this.key}: ${e.message}`);
+    }
   }
 
   async restore() {
@@ -60,6 +67,7 @@ module.exports = class Storage {
     } else {
       this.data = value;
     }
-    this.put();
+    this.changed = true;
+    this.debouncePut();
   }
 };

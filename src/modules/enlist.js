@@ -117,8 +117,8 @@ module.exports = async function ({
       )
       .setTitle("Server is Online")
       .setDescription(
-        `**Online Players: ${stats.players.length} (${stats.empires.TR} <:terran:${emojis.terran}> ` +
-          `${stats.empires.NC} <:newcon:${emojis.newcon}> ${stats.empires.VS} <:vanu:${emojis.vanu}>)**`
+        `**Online Players: ${stats.players.length} (<:terran:${emojis.terran}> ${stats.empires.TR} ` +
+          `<:newcon:${emojis.newcon}> ${stats.empires.NC} <:vanu:${emojis.vanu}>  ${stats.empires.VS})**`
       )
       .addFields({
         name: "Want to subscribe to battle alerts?",
@@ -202,7 +202,8 @@ module.exports = async function ({
   }
 
   statsEmitter.on("update", updateHandler);
-  return function () {
+  return async function () {
+    await store.put();
     statsEmitter.off("update", updateHandler);
   };
 };

@@ -4,7 +4,7 @@ const parser = require("discord-command-parser");
 const fs = require("fs");
 const Discord = require("discord.js");
 const immutable = require("object-path-immutable");
-const StatsEmitter = require("./statsEmitter");
+const StatsEmitter = require("./stats-emitter");
 const log = require("./log");
 const Storage = require("./storage");
 
@@ -138,11 +138,10 @@ client.on("ready", async () => {
     }
   }
 
-  function reloadModules() {
-    console.log(deinitializers);
+  async function reloadModules() {
     for (const [module, deinitialize] of Object.entries(deinitializers)) {
       log.info(`deinitializing module ${module}`);
-      deinitialize();
+      await deinitialize();
     }
     loadModules();
   }
