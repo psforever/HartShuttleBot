@@ -205,6 +205,7 @@ module.exports = async function ({ client, log, statsEmitter, Storage }) {
     const channel = await user.createDM();
     try {
       const data = await runner.run(askPlayers, channel);
+      delete data.__authorID;
       store.set(
         "subscriptions",
         store
