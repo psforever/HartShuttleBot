@@ -1,47 +1,45 @@
-require("./sentry");
-require("dotenv").config();
-const parser = require("discord-command-parser");
-const fs = require("fs");
-const Discord = require("discord.js");
-const immutable = require("object-path-immutable");
-const StatsEmitter = require("./stats-emitter");
-const log = require("./log");
-const Storage = require("./storage");
+require('./sentry')
+require('dotenv').config()
+const parser = require('discord-command-parser')
+const fs = require('fs')
+const Discord = require('discord.js')
+const immutable = require('object-path-immutable')
+const StatsEmitter = require('./stats-emitter')
+const log = require('./log')
+const Storage = require('./storage')
 
-const client = new Discord.Client();
-const statsEmitter = new StatsEmitter();
+const client = new Discord.Client()
+const statsEmitter = new StatsEmitter()
 
-client.login(process.env.DISCORD_TOKEN);
+client.login(process.env.DISCORD_TOKEN)
 
 const defaultConfig = {
   permittedRoles: [],
   enlist: {
     minPlayers: 20,
-    channelId: "",
+    channelId: '',
   },
   report: {
-    channelId: "",
+    channelId: '',
   },
-};
+}
 
-client.on("ready", async () => {
-  log.info(`logged in as ${client.user.tag}`);
+client.on('ready', async () => {
+  log.info(`logged in as ${client.user.tag}`)
 
-  const config = new Storage("config", defaultConfig);
-  await config.restore();
+  const config = new Storage('config', defaultConfig)
+  await config.restore()
 
-  client.on("message", async function (message) {
-    const parsed = parser.parse(message, "!", { allowBots: false });
-    if (!parsed.success || parsed.command !== "hart") return;
+  client.on('message', async function (message) {
+    const parsed = parser.parse(message, '!', {allowBots: false})
+    if (!parsed.success || parsed.command !== 'hart') return
 
     if (!message.member) {
-      return message.reply(
-        "The `!hart` command cannot be used in direct messages."
-      );
+      return message.reply('The `!hart` command cannot be used in direct messages.')
     }
 
     switch (parsed.reader.getString()) {
-      case "help":
+      case 'help':
         message.reply(
           `HartShuttleBot commands.\n` +
             `**!hart config set <path> <value>**\n` +
@@ -50,72 +48,66 @@ client.on("ready", async () => {
             `Print the current configuration.\n\n` +
             `Using config commands requires a role in the \`permittedRoles\` config or to be administrator.\n` +
             `Only a administrator can set \`permittedRoles\`.`
-        );
-        break;
-      case "config":
+        )
+        break
+      case 'config':
         if (
           !message.member.roles.cache.find(
-            (role) =>
+            role =>
               role.permissions.has(Discord.Permissions.FLAGS.ADMINISTRATOR) ||
-              config.get("permittedRoles").find((p) => p === role.id)
+              config.get('permittedRoles').find(p => p === role.id)
           )
         ) {
-          return message.reply("you do not have permission to do that.");
+          return message.reply('you do not have permission to do that.')
         }
         switch (parsed.reader.getString()) {
-          case "set": {
-            const path = parsed.reader.getString();
+          case 'set': {
+            const path = parsed.reader.getString()
             if (
-              path === "permittedRoles" &&
-              !message.member.roles.cache.find((role) =>
-                role.permissions.has(Discord.Permissions.FLAGS.ADMINISTRATOR)
-              )
+              path === 'permittedRoles' &&
+              !message.member.roles.cache.find(role => role.permissions.has(Discord.Permissions.FLAGS.ADMINISTRATOR))
             ) {
-              return message.reply("only admin can change permittedRoles.");
+              return message.reply('only admin can change permittedRoles.')
             }
-            const value = parsed.reader.getString();
+            const value = parsed.reader.getString()
             if (value === null) {
-              return message.reply("missing value.");
+              return message.reply('missing value.')
             }
             if (parsed.reader.getString() !== null) {
-              return message.reply(
-                'multiple values are not allowed. For arrays use `"one two three"`.'
-              );
+              return message.reply('multiple values are not allowed. For arrays use `"one two three"`.')
             }
             switch (typeof immutable.get(defaultConfig, path)) {
-              case "string":
-                config.set(path, value);
-                break;
-              case "number":
-                config.set(path, parseInt(value, 10));
-                break;
-              case "object":
+              case 'string':
+                config.set(path, value)
+                break
+              case 'number':
+                config.set(path, parseInt(value, 10))
+                break
+              case 'object':
                 if (Array.isArray(immutable.get(defaultConfig, path))) {
-                  config.set(path, value.split(" "));
+                  config.set(path, value.split(' '))
                 } else {
-                  return message.reply("bad value.");
+                  return message.reply('bad value.')
                 }
-                break;
+                break
               default:
-                return message.reply("bad value.");
+                return message.reply('bad value.')
             }
-            message.reply("value set.");
-            reloadModules();
-            break;
+            message.reply('value set.')
+            reloadModules()
+            break
           }
-          case "dump":
-            message.reply(
-              `\n\`\`\`json\n${JSON.stringify(config.get(), null, 2)}\n\`\`\``
-            );
-            break;
+          case 'dump':
+            message.reply(`\n\`\`\`json\n${JSON.stringify(config.get(), null, 2)}\n\`\`\``)
+            break
           default:
-            message.reply("Unknown command, see `!hart help`.");
+            message.reply('Unknown command, see `!hart help`.')
         }
-        break;
+        break
       default:
-        message.reply("Unknown command, see `!hart help`.");
+        message.reply('Unknown command, see `!hart help`.')
     }
-  });
+  })
 
   const args = {
     client,
@@ -123,28 +115,28 @@ client.on("ready", async () => {
     statsEmitter,
     config,
     Storage,
-  };
+  }
 
-  const deinitializers = {};
+  const deinitializers = {}
 
   async function loadModules() {
     for (const file of fs.readdirSync(`${__dirname}/modules`)) {
-      const module = file.split(".")[0];
-      log.info(`intializing module ${module}`);
+      const module = file.split('.')[0]
+      log.info(`intializing module ${module}`)
       deinitializers[module] = await require(`./modules/${file}`)({
         ...args,
-        log: log.child({ module }),
-      });
+        log: log.child({module}),
+      })
     }
   }
 
   async function reloadModules() {
     for (const [module, deinitialize] of Object.entries(deinitializers)) {
-      log.info(`deinitializing module ${module}`);
-      await deinitialize();
+      log.info(`deinitializing module ${module}`)
+      await deinitialize()
     }
-    loadModules();
+    loadModules()
   }
 
-  loadModules();
-});
+  loadModules()
+})

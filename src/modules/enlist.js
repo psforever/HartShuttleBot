@@ -1,47 +1,41 @@
-const Discord = require("discord.js");
-const { Duration } = require("@js-joda/core");
+const Discord = require('discord.js')
+const {Duration} = require('@js-joda/core')
 const emojis = {
-  terran: "444448298657513482",
-  newcon: "231260160511705088",
-  vanu: "231260169676390403",
-  thumbsup: "👍", // for testing
-};
+  terran: '444448298657513482',
+  newcon: '231260160511705088',
+  vanu: '231260169676390403',
+  thumbsup: '👍', // for testing
+}
 
-module.exports = async function ({
-  client,
-  statsEmitter,
-  log,
-  config,
-  Storage,
-}) {
-  if (!config.get("enlist.channelId")) {
-    log.warn("channelId not set, skipping initialization");
-    return function () {};
+module.exports = async function ({client, statsEmitter, log, config, Storage}) {
+  if (!config.get('enlist.channelId')) {
+    log.warn('channelId not set, skipping initialization')
+    return function () {}
   }
-  const channel = await client.channels.fetch(config.get("enlist.channelId"));
+  const channel = await client.channels.fetch(config.get('enlist.channelId'))
 
-  const store = new Storage("enlist", { subscriptions: [] });
-  await store.restore();
-  let message = null;
-  let stats = await statsEmitter.fetch();
+  const store = new Storage('enlist', {subscriptions: []})
+  await store.restore()
+  let message = null
+  let stats = await statsEmitter.fetch()
 
-  const embedMessages = (await channel.messages.fetch({ limit: 10 })).filter(
-    (m) => m.author.id === client.user.id && m.embeds.length > 0
-  );
+  const embedMessages = (await channel.messages.fetch({limit: 10})).filter(
+    m => m.author.id === client.user.id && m.embeds.length > 0
+  )
   if (embedMessages.size > 0) {
-    message = embedMessages.first();
-    message = await message.edit(embed());
-    await updateSubscriptions();
+    message = embedMessages.first()
+    message = await message.edit(embed())
+    await updateSubscriptions()
   } else {
-    message = await channel.send(embed());
+    message = await channel.send(embed())
   }
 
   try {
-    await message.react(emojis.terran);
-    await message.react(emojis.newcon);
-    await message.react(emojis.vanu);
+    await message.react(emojis.terran)
+    await message.react(emojis.newcon)
+    await message.react(emojis.vanu)
   } catch (e) {
-    log.warn(e.message);
+    log.warn(e.message)
   }
 
   async function updateHandler(newStats) {
@@ -50,127 +44,118 @@ module.exports = async function ({
       newStats.empires.NC !== stats.empires.NC ||
       newStats.empires.VS !== stats.empires.VS
     ) {
-      stats = newStats;
-      message = await message.edit(embed());
+      stats = newStats
+      message = await message.edit(embed())
     } else {
-      message = await message.fetch();
+      message = await message.fetch()
     }
-    await updateSubscriptions();
+    await updateSubscriptions()
 
     if (
-      store.get("subscriptions").length > 0 &&
-      store.get("subscriptions").length + stats.players.length >=
-        config.get("enlist.minPlayers")
+      store.get('subscriptions').length > 0 &&
+      store.get('subscriptions').length + stats.players.length >= config.get('enlist.minPlayers')
     ) {
       const pings = store
-        .get("subscriptions")
-        .map((s) => `<@${s.id}>`)
-        .join(" ");
+        .get('subscriptions')
+        .map(s => `<@${s.id}>`)
+        .join(' ')
       await channel.send(
-        `Your shuttle has arrived! ${
-          store.get("subscriptions").length
-        } players are ready to play and ${
+        `Your shuttle has arrived! ${store.get('subscriptions').length} players are ready to play and ${
           stats.players.length
-        } players are already online. ` +
-          `We hope to see you on the battlefield.\n${pings}`
-      );
-      for (const subscription of store.get("subscriptions")) {
-        await unsubscribe(subscription);
+        } players are already online. We hope to see you on the battlefield.\n${pings}`
+      )
+      for (const subscription of store.get('subscriptions')) {
+        await unsubscribe(subscription)
       }
-      log.info(`notified ${pings}`);
+      log.info(`notified ${pings}`)
     }
 
     // filter out expired subscriptions
-    for (const subscription of store.get("subscriptions")) {
+    for (const subscription of store.get('subscriptions')) {
       if (Date.now() - subscription.time > Duration.ofHours(2).toMillis()) {
-        await unsubscribe(subscription);
+        await unsubscribe(subscription)
       }
     }
 
     // clear notifications after 10 minutes
-    const oldMessages = (await channel.messages.fetch({ limit: 10 })).filter(
-      (m) =>
+    const oldMessages = (await channel.messages.fetch({limit: 10})).filter(
+      m =>
         m.author.id === client.user.id &&
         m.embeds.length === 0 &&
         Date.now() - m.createdTimestamp > Duration.ofMinutes(10).toMillis()
-    );
+    )
     for (const [, oldMessage] of oldMessages) {
-      await oldMessage.delete();
+      await oldMessage.delete()
     }
   }
 
   function embed() {
-    const newMessage = new Discord.MessageEmbed().setURL(
-      "https://play.psforever.net"
-    );
+    const newMessage = new Discord.MessageEmbed().setURL('https://play.psforever.net')
 
-    if (stats.status !== "UP") {
-      return newMessage.setColor("#ff0000").setTitle("Server is Offline");
+    if (stats.status !== 'UP') {
+      return newMessage.setColor('#ff0000').setTitle('Server is Offline')
     }
 
     return newMessage
-      .setColor("#0099ff")
+      .setColor('#0099ff')
       .setAuthor(
-        "How to play",
-        "https://psforever.net/index_files/logo_crop.png",
-        "https://docs.google.com/document/d/1ZMx1NUylVZCXJNRyhkuVWT0eUKSVYu0JXsU-y3f93BY/edit"
+        'How to play',
+        'https://psforever.net/index_files/logo_crop.png',
+        'https://docs.google.com/document/d/1ZMx1NUylVZCXJNRyhkuVWT0eUKSVYu0JXsU-y3f93BY/edit'
       )
-      .setTitle("Server is Online")
+      .setTitle('Server is Online')
       .setDescription(
         `**Online Players: ${stats.players.length} (<:terran:${emojis.terran}> ${stats.empires.TR} ` +
           `<:newcon:${emojis.newcon}> ${stats.empires.NC} <:vanu:${emojis.vanu}>  ${stats.empires.VS})**`
       )
       .addFields({
-        name: "Want to subscribe to battle alerts?",
+        name: 'Want to subscribe to battle alerts?',
         value: `Direct message <@${client.user.id}> with \`!alert subscribe\` to get started.`,
       })
       .addFields({
-        name: "Want to start a battle?",
+        name: 'Want to start a battle?',
         value: `React with your faction of choice and get notified if we get to ${config.get(
-          "enlist.minPlayers"
+          'enlist.minPlayers'
         )} enlisted and online players within the next two hours.\n`,
-      });
+      })
   }
 
   async function updateSubscriptions() {
-    const active = [];
+    const active = []
     for (const [, reaction] of message.reactions.cache) {
-      await reaction.users.fetch();
+      await reaction.users.fetch()
 
-      if (!Object.values(emojis).find((id) => id === reaction.emoji.id)) {
-        await reaction.remove();
-        continue;
+      if (!Object.values(emojis).find(id => id === reaction.emoji.id)) {
+        await reaction.remove()
+        continue
       }
 
       for (const [, user] of reaction.users.cache) {
-        active.push(user.id);
-        if (
-          user.id !== client.user.id &&
-          !store.get("subscriptions").find((s) => s.id === user.id)
-        ) {
-          if (stats.players.length < config.get("enlist.minPlayers")) {
-            await subscribe(user);
+        active.push(user.id)
+        if (user.id !== client.user.id && !store.get('subscriptions').find(s => s.id === user.id)) {
+          if (stats.players.length < config.get('enlist.minPlayers')) {
+            await subscribe(user)
           } else {
             // server has plenty of online players, go away
-            await unsubscribe(user);
+            await unsubscribe(user)
           }
         }
       }
     }
-    for (const subscription of store.get("subscriptions")) {
-      if (!active.find((uid) => uid === subscription.id)) {
-        await unsubscribe(subscription);
+    for (const subscription of store.get('subscriptions')) {
+      if (!active.find(uid => uid === subscription.id)) {
+        await unsubscribe(subscription)
       }
     }
   }
 
-  async function subscribe({ id, tag }) {
-    log.info(`subscribe ${tag}`);
-    const subscriptions = store.get("subscriptions");
-    const idx = subscriptions.findIndex((s) => s.id === id);
+  async function subscribe({id, tag}) {
+    log.info(`subscribe ${tag}`)
+    const subscriptions = store.get('subscriptions')
+    const idx = subscriptions.findIndex(s => s.id === id)
     if (idx === -1) {
       store.set(
-        "subscriptions",
+        'subscriptions',
         subscriptions.concat([
           {
             id,
@@ -178,32 +163,32 @@ module.exports = async function ({
             time: Date.now(),
           },
         ])
-      );
+      )
     } else {
-      subscriptions[idx].time = Date.now();
-      store.set("subscriptions", subscriptions);
+      subscriptions[idx].time = Date.now()
+      store.set('subscriptions', subscriptions)
     }
   }
 
-  async function unsubscribe({ id, tag }) {
-    log.info(`unsubscribe ${tag}`);
+  async function unsubscribe({id, tag}) {
+    log.info(`unsubscribe ${tag}`)
     store.set(
-      "subscriptions",
-      store.get("subscriptions").filter((s) => s.id !== id)
-    );
+      'subscriptions',
+      store.get('subscriptions').filter(s => s.id !== id)
+    )
     for (const [, reaction] of message.reactions.cache) {
-      await reaction.users.fetch();
+      await reaction.users.fetch()
       for (const [, user] of reaction.users.cache) {
         if (user.id === id) {
-          await reaction.users.remove(id);
+          await reaction.users.remove(id)
         }
       }
     }
   }
 
-  statsEmitter.on("update", updateHandler);
+  statsEmitter.on('update', updateHandler)
   return async function () {
-    await store.put();
-    statsEmitter.off("update", updateHandler);
-  };
-};
+    await store.put()
+    statsEmitter.off('update', updateHandler)
+  }
+}
