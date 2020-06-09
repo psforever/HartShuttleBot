@@ -125,7 +125,7 @@ const success = new PromptNode(
   new DiscordPrompt(() => {
     return new MessageVisual(
       `Your subscription is now active! To update your settings, simply run \`!alert subscribe\` again. ` +
-        `To remove your subscription, run \`!alert unsubscribe\`.`
+        `To remove your subscription, run \`!alert unsubscribe\`, and to show your subscription status run \`!alert status\`.`
     )
   })
 )
@@ -246,15 +246,16 @@ module.exports = async function ({client, log, statsEmitter, Storage}) {
       ) {
         continue
       }
-      log.info(`alert ${subscription.tag}`)
       const user = await client.users.fetch(subscription.id)
+      if (user.presence.status === 'offline' || user.presence.status === 'dnd') continue
       user.send(
-        `${totalPlayers} players are online on PSForever. Join the battle now!\n` +
+        `**${totalPlayers} players are online on PSForever. Join the battle now!**\n` +
           `You subscribed to this message. To unsubscribe, reply with \`!alert unsubscribe\`.`
       )
       const subscriptions = store.get('subscriptions')
       subscriptions[idx].lastNotification = Date.now()
       store.set('subscriptions', subscriptions)
+      log.info(`alerted ${subscription.tag}`)
     }
   }
 

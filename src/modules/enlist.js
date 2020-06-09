@@ -150,7 +150,6 @@ module.exports = async function ({client, statsEmitter, log, config, Storage}) {
   }
 
   async function subscribe({id, tag}) {
-    log.info(`subscribe ${tag}`)
     const subscriptions = store.get('subscriptions')
     const idx = subscriptions.findIndex(s => s.id === id)
     if (idx === -1) {
@@ -168,10 +167,10 @@ module.exports = async function ({client, statsEmitter, log, config, Storage}) {
       subscriptions[idx].time = Date.now()
       store.set('subscriptions', subscriptions)
     }
+    log.info(`subscribed ${tag}`)
   }
 
   async function unsubscribe({id, tag}) {
-    log.info(`unsubscribe ${tag}`)
     store.set(
       'subscriptions',
       store.get('subscriptions').filter(s => s.id !== id)
@@ -184,6 +183,7 @@ module.exports = async function ({client, statsEmitter, log, config, Storage}) {
         }
       }
     }
+    log.info(`unsubscribed ${tag}`)
   }
 
   statsEmitter.on('update', updateHandler)
