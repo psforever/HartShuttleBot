@@ -61,31 +61,37 @@ const askTimezone = new PromptNode(
 const askWeekdayTimeframes = new PromptNode(
   new DiscordPrompt(
     new MessageVisual(
-      `During which time frame do you want to get notified on **weekdays**? Use the 24-hour time format. For example \`17:00-22:00\` to get notified during the evenings or \`00:00-24:00\` to get notified at any time.`
+      `During which time frame do you want to get notified on **weekdays**? Use the 24-hour time format. ` +
+        `For example \`17:00-22:00\` to get notified during the evenings or \`00:00-24:00\` to get notified at any time.` +
+        `To set a different value for each day, enter five space-separated values.`
     ),
     async (m, data) => {
-      let parts = m.content.split('-')
-      // 24:00 doesn't technically exist so we convert it to 23:59:59
-      if (parts[1] === '24:00') {
-        parts = [parts[0], '23:59:59']
+      const timeframes = m.content.split(' ')
+      if (timeframes.length !== 1 && timeframes.length !== 5) {
+        throw new Rejection('Enter either one or five values.')
       }
-      try {
-        let from = LocalTime.parse(parts[0])
-        let to = LocalTime.parse(parts[1])
-        from = from.toString()
-        to = to.toString()
-        return {
-          ...data,
-          timeframes: [
-            [from, to],
-            [from, to],
-            [from, to],
-            [from, to],
-            [from, to],
-          ],
+      if (timeframes.length === 1) {
+        for (let i = 1; i < 5; i++) {
+          timeframes[i] = timeframes[0]
         }
-      } catch (error) {
-        throw new Rejection('Invalid time format, please try again.')
+      }
+      for (let i = 0; i < 5; i++) {
+        let parts = timeframes[i].split('-')
+        // 24:00 doesn't technically exist so we convert it to 23:59:59
+        if (parts[1] === '24:00') {
+          parts = [parts[0], '23:59:59']
+        }
+        try {
+          const from = LocalTime.parse(parts[0])
+          const to = LocalTime.parse(parts[1])
+          timeframes[i] = [from.toString(), to.toString()]
+        } catch (error) {
+          throw new Rejection('Invalid time format, please try again.')
+        }
+      }
+      return {
+        ...data,
+        timeframes,
       }
     }
   )
@@ -94,28 +100,37 @@ const askWeekdayTimeframes = new PromptNode(
 const askWeekendTimeframes = new PromptNode(
   new DiscordPrompt(
     new MessageVisual(
-      `During which time frame do you want to get notified on **weekends**? Use the 24-hour time format. For example \`17:00-22:00\` to get notified during the evenings or \`00:00-24:00\` to get notified at any time.`
+      `During which time frame do you want to get notified on **weekends**? Use the 24-hour time format. ` +
+        `For example \`17:00-22:00\` to get notified during the evenings or \`00:00-24:00\` to get notified at an  y time.` +
+        `To set a different value for each day, enter two space-separated values.`
     ),
     async (m, data) => {
-      let parts = m.content.split('-')
-      // 24:00 doesn't technically exist so we convert it to 23:59:59
-      if (parts[1] === '24:00') {
-        parts = [parts[0], '23:59:59']
+      const timeframes = m.content.split(' ')
+      if (timeframes.length !== 1 && timeframes.length !== 2) {
+        throw new Rejection('Enter either one or two values.')
       }
-      try {
-        let from = LocalTime.parse(parts[0])
-        let to = LocalTime.parse(parts[1])
-        from = from.toString()
-        to = to.toString()
-        return {
-          ...data,
-          timeframes: data.timeframes.concat([
-            [from, to],
-            [from, to],
-          ]),
+      if (timeframes.length === 1) {
+        for (let i = 1; i < 2; i++) {
+          timeframes[i] = timeframes[0]
         }
-      } catch (error) {
-        throw new Rejection('Invalid time format, please try again.')
+      }
+      for (let i = 0; i < 2; i++) {
+        let parts = timeframes[i].split('-')
+        // 24:00 doesn't technically exist so we convert it to 23:59:59
+        if (parts[1] === '24:00') {
+          parts = [parts[0], '23:59:59']
+        }
+        try {
+          const from = LocalTime.parse(parts[0])
+          const to = LocalTime.parse(parts[1])
+          timeframes[i] = [from.toString(), to.toString()]
+        } catch (error) {
+          throw new Rejection('Invalid time format, please try again.')
+        }
+      }
+      return {
+        ...data,
+        timeframes: data.timeframes.concat(timeframes),
       }
     }
   )
@@ -195,12 +210,12 @@ module.exports = async function ({client, log, statsEmitter, Storage}) {
           `Player threshold: ${subscription.players}\n` +
           `Characters: ${subscription.characters.join(' ')}\n` +
           `Timezone: ${subscription.timezone}\n` +
-          `Timeframes: \n`
+          `Time frames: \n`
         }${subscription.timeframes
           .map((t, i) => {
             const day = DayOfWeek.of(i + 1).name()
             const dayString = day[0].toUpperCase() + day.slice(1).toLowerCase()
-            return `    ${dayString} ${t[1]}-${t[1]}`
+            return `    ${dayString} ${t[0]}-${t[1]}`
           })
           .join('\n')}`
       )
