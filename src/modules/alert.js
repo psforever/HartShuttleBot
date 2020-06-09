@@ -2,7 +2,7 @@ const parser = require('discord-command-parser')
 const {DiscordPrompt, Rejection, PromptNode, DiscordPromptRunner, MessageVisual, Errors} = require('discord.js-prompts')
 const jsJoda = require('@js-joda/core')
 require('@js-joda/timezone')
-const {LocalTime, ZoneId, Instant, ChronoUnit, LocalDateTime, ZonedDateTime} = jsJoda
+const {LocalTime, ZoneId, Instant, ChronoUnit, LocalDateTime, ZonedDateTime, DayOfWeek} = jsJoda
 
 const askPlayers = new PromptNode(
   new DiscordPrompt(
@@ -147,17 +147,24 @@ module.exports = async function ({client, log, statsEmitter, Storage}) {
     switch (parsed.reader.getString()) {
       case 'help':
         message.reply(
-          `The !alert command is used to set up a permanent subscription to online player notifications.\n` +
+          `The !alert command is used to set up a permanent subscription to online player notifications. ` +
+            `Alerts are sent no more than once every 12 hours and only to users who are online and not on DND. ` +
+            `The following commands are available:\n\n` +
             `**!alert subscribe**\n` +
             `Create or update a subscription.\n` +
             `**!alert status**\n` +
             `Show your current subscription status.\n` +
+            `**!alert debug**\n` +
+            `Print debug information.\n` +
             `**!alert unsubscribe**\n` +
             `Remove your subscription.`
         )
         break
       case 'status':
         status(message.author)
+        break
+      case 'debug':
+        debug(message.author)
         break
       case 'subscribe':
         subscribe(message.author)
@@ -169,11 +176,34 @@ module.exports = async function ({client, log, statsEmitter, Storage}) {
         message.reply('Unknown command. See `!alert help` for usage.')
     }
   }
+
+  async function debug(user) {
+    const subscription = store.get('subscriptions').find(s => s.id === user.id)
+    if (subscription) {
+      user.send(`\n\`\`\`json\n${JSON.stringify(subscription, null, 2)}\n\`\`\``)
+    } else {
+      user.send('error: You are not subscribed.')
+    }
+  }
+
   async function status(user) {
     const subscription = store.get('subscriptions').find(s => s.id === user.id)
     if (subscription) {
-      user.send('You are subscribed.')
-      user.send(JSON.stringify(subscription))
+      user.send(
+        `${
+          `You are subscribed.\n` +
+          `Player threshold: ${subscription.players}\n` +
+          `Characters: ${subscription.characters.join(' ')}\n` +
+          `Timezone: ${subscription.timezone}\n` +
+          `Timeframes: \n`
+        }${subscription.timeframes
+          .map((t, i) => {
+            const day = DayOfWeek.of(i + 1).name()
+            const dayString = day[0].toUpperCase() + day.slice(1).toLowerCase()
+            return `    ${dayString} ${t[1]}-${t[1]}`
+          })
+          .join('\n')}`
+      )
     } else {
       user.send('You are not subscribed.')
     }
