@@ -163,7 +163,7 @@ module.exports = async function ({client, log, statsEmitter, Storage}) {
       case 'help':
         message.reply(
           `The !alert command is used to set up a permanent subscription to online player notifications. ` +
-            `Alerts are sent no more than once every 12 hours and only to users who are online and not on DND. ` +
+            `Alerts are sent no more than once every 12 hours. ` +
             `The following commands are available:\n\n` +
             `**!alert subscribe**\n` +
             `Create or update a subscription.\n` +
@@ -292,7 +292,6 @@ module.exports = async function ({client, log, statsEmitter, Storage}) {
         continue
       }
       const user = await client.users.fetch(subscription.id)
-      if (user.presence.status === 'offline' || user.presence.status === 'dnd') continue
       user.send(
         `**${totalPlayers} players are online on PSForever. Join the battle now!**\n` +
           `You subscribed to this message. To unsubscribe, reply with \`!alert unsubscribe\`.`
