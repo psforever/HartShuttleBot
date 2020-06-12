@@ -7,6 +7,7 @@ const immutable = require('object-path-immutable')
 const StatsEmitter = require('./stats-emitter')
 const log = require('./log')
 const Storage = require('./storage')
+const exitHook = require('exit-hook')
 
 const client = new Discord.Client()
 const statsEmitter = new StatsEmitter()
@@ -94,7 +95,8 @@ client.on('ready', async () => {
                 return message.reply('bad value.')
             }
             message.reply('value set.')
-            reloadModules()
+            await deinitializeModules()
+            await initializeModules()
             break
           }
           case 'dump':
@@ -119,7 +121,7 @@ client.on('ready', async () => {
 
   const deinitializers = {}
 
-  async function loadModules() {
+  async function initializeModules() {
     for (const file of fs.readdirSync(`${__dirname}/modules`)) {
       const module = file.split('.')[0]
       log.info(`intializing module ${module}`)
@@ -130,13 +132,16 @@ client.on('ready', async () => {
     }
   }
 
-  async function reloadModules() {
+  async function deinitializeModules() {
     for (const [module, deinitialize] of Object.entries(deinitializers)) {
       log.info(`deinitializing module ${module}`)
       await deinitialize()
     }
-    loadModules()
   }
 
-  loadModules()
+  exitHook(async () => {
+    await deinitializeModules()
+  })
+
+  initializeModules()
 })
