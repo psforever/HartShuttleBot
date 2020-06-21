@@ -62,7 +62,7 @@ const askWeekdayTimeframes = new PromptNode(
   new DiscordPrompt(
     new MessageVisual(
       `During which time frame do you want to get notified on **weekdays**? Use the 24-hour time format. ` +
-        `For example \`17:00-22:00\` to get notified during the evenings or \`00:00-24:00\` to get notified at any time.` +
+        `For example \`17:00-22:00\` to get notified during the evenings or \`00:00-24:00\` to get notified at any time. ` +
         `To set a different value for each day, enter five space-separated values.`
     ),
     async (m, data) => {
@@ -101,7 +101,7 @@ const askWeekendTimeframes = new PromptNode(
   new DiscordPrompt(
     new MessageVisual(
       `During which time frame do you want to get notified on **weekends**? Use the 24-hour time format. ` +
-        `For example \`17:00-22:00\` to get notified during the evenings or \`00:00-24:00\` to get notified at an  y time.` +
+        `For example \`17:00-22:00\` to get notified during the evenings or \`00:00-24:00\` to get notified at any time. ` +
         `To set a different value for each day, enter two space-separated values.`
     ),
     async (m, data) => {
