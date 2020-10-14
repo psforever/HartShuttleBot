@@ -93,7 +93,7 @@ module.exports = async function ({client, statsEmitter, log, config, Storage}) {
     const newMessage = new Discord.MessageEmbed().setURL('https://play.psforever.net')
 
     if (stats.status !== 'UP') {
-      return newMessage.setColor('#ff0000').setTitle('Server is Offline')
+      return newMessage.setColor('#ff0000').setTitle('Server Is Offline')
     }
 
     return newMessage
@@ -103,10 +103,16 @@ module.exports = async function ({client, statsEmitter, log, config, Storage}) {
         'https://psforever.net/index_files/logo_crop.png',
         'https://docs.google.com/document/d/1ZMx1NUylVZCXJNRyhkuVWT0eUKSVYu0JXsU-y3f93BY/edit'
       )
-      .setTitle('Server is Online')
-      .setDescription(
-        `**Online Players: ${stats.players.length} (<:terran:${emojis.terran}> ${stats.empires.TR} ` +
-          `<:newcon:${emojis.newcon}> ${stats.empires.NC} <:vanu:${emojis.vanu}>  ${stats.empires.VS})**`
+      .setTitle('Server Is Online')
+      .addField(
+        `Online Players: ${stats.players.length}`,
+        [
+          ['TR', 'terran'],
+          ['NC', 'newcon'],
+          ['VS', 'vanu'],
+        ]
+          .map(v => `${stats.empires[v[0]]} <:${v[1]}:${emojis[v[1]]}>`)
+          .join(' ')
       )
       .addFields({
         name: 'Want to subscribe to battle alerts?',
