@@ -21,7 +21,7 @@
     "discord.js-prompts": "^2.2.1",
     "dotenv": "^8.2.0",
     "exit-hook": "^2.2.0",
-    "node-fetch": "^2.6.1",
+    "node-fetch": "^2.6.7",
     "object-path-immutable": "^4.1.0",
     "winston": "^3.3.3",
     "winston-transport-sentry-node": "^0.7.0"
