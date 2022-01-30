@@ -240,7 +240,7 @@ module.exports = async function ({client, log, statsEmitter, Storage}) {
               ...data,
               id: user.id,
               tag: user.tag,
-              lastNotification: Date.now(),
+              lastNotification: 0,
             },
           ])
       )
@@ -279,6 +279,7 @@ module.exports = async function ({client, log, statsEmitter, Storage}) {
         .truncatedTo(ChronoUnit.DAYS)
         .plusNanos(LocalTime.parse(subscription.timeframes[now.dayOfWeek().value() - 1][1]).toNanoOfDay())
         .atZone(ZoneId.of(subscription.timezone))
+
       if (
         subscription.players > totalPlayers ||
         LocalDateTime.ofInstant(Instant.ofEpochMilli(subscription.lastNotification)).until(
@@ -291,23 +292,26 @@ module.exports = async function ({client, log, statsEmitter, Storage}) {
       ) {
         continue
       }
-      const user = await client.users.fetch(subscription.id)
-      user.send(
-        `**${totalPlayers} players are online on PSForever. Join the battle now!**\n` +
-          `You subscribed to this message. To unsubscribe, reply with \`!alert unsubscribe\`.`
-      )
+
       const subscriptions = store.get('subscriptions')
       subscriptions[idx].lastNotification = Date.now()
       store.set('subscriptions', subscriptions)
+
+      const user = await client.users.fetch(subscription.id)
+      await user.send(
+        `**${totalPlayers} players are online on PSForever. Join the battle now!**\n` +
+          `You subscribed to this message. To unsubscribe, reply with \`!alert unsubscribe\`.`
+      )
+
       log.info(`alerted ${subscription.tag}`)
     }
   }
 
   statsEmitter.on('update', updateHandler)
-  client.on('message', messageHandler)
+  client.on('messageCreate', messageHandler)
   return async function () {
     await store.put()
-    client.off('message', messageHandler)
+    await client.off('messageCreate', messageHandler)
     statsEmitter.off('update', updateHandler)
   }
 }

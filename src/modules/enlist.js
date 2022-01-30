@@ -98,11 +98,11 @@ module.exports = async function ({client, statsEmitter, log, config, Storage}) {
 
     return newMessage
       .setColor('#0099ff')
-      .setAuthor(
-        'How to play',
-        'https://psforever.net/index_files/logo_crop.png',
-        'https://docs.google.com/document/d/1ZMx1NUylVZCXJNRyhkuVWT0eUKSVYu0JXsU-y3f93BY/edit'
-      )
+      .setAuthor({
+        name: 'How to play',
+        url: 'https://docs.google.com/document/d/1ZMx1NUylVZCXJNRyhkuVWT0eUKSVYu0JXsU-y3f93BY/edit',
+        iconURL: 'https://psforever.net/index_files/logo_crop.png',
+      })
       .setTitle('Server Is Online')
       .addField(
         `Online Players: ${stats.players.length}`,

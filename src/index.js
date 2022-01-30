@@ -9,7 +9,10 @@ const log = require('./log')
 const Storage = require('./storage')
 const exitHook = require('exit-hook')
 
-const client = new Discord.Client()
+const client = new Discord.Client({
+  partials: ['CHANNEL'],
+  intents: [Discord.Intents.FLAGS.GUILDS, Discord.Intents.FLAGS.DIRECT_MESSAGES, Discord.Intents.FLAGS.GUILD_MESSAGES],
+})
 const statsEmitter = new StatsEmitter()
 
 client.login(process.env.DISCORD_TOKEN)
@@ -31,7 +34,7 @@ client.on('ready', async () => {
   const config = new Storage('config', defaultConfig)
   await config.restore()
 
-  client.on('message', async function (message) {
+  async function messageHandler(message) {
     const parsed = parser.parse(message, '!', {allowBots: false})
     if (!parsed.success || parsed.command !== 'hart') return
 
@@ -109,7 +112,9 @@ client.on('ready', async () => {
       default:
         message.reply('Unknown command, see `!hart help`.')
     }
-  })
+  }
+
+  client.on('messageCreate', messageHandler)
 
   const args = {
     client,
@@ -141,6 +146,7 @@ client.on('ready', async () => {
 
   exitHook(async () => {
     await deinitializeModules()
+    await client.off('messageCreate', messageHandler)
   })
 
   initializeModules()

@@ -25,8 +25,8 @@ module.exports = async function ({client, config, log}) {
     channel.send(`@here Report from <@${message.author.id}> for player \`${name}\` for reason: \`${reason}\``)
   }
 
-  client.on('message', messageHandler)
+  client.on('messageCreate', messageHandler)
   return async function () {
-    client.off('message', messageHandler)
+    await client.off('messageCreate', messageHandler)
   }
 }
