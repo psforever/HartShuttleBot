@@ -13,9 +13,12 @@ const client = new Discord.Client({
   partials: ['CHANNEL'],
   intents: [Discord.Intents.FLAGS.GUILDS, Discord.Intents.FLAGS.DIRECT_MESSAGES, Discord.Intents.FLAGS.GUILD_MESSAGES],
 })
-const statsEmitter = new StatsEmitter()
-
 client.login(process.env.DISCORD_TOKEN)
+
+const statsEmitter = new StatsEmitter({captureRejections: true})
+statsEmitter.on('error', err => {
+  log.error(err.message)
+})
 
 const defaultConfig = {
   permittedRoles: [],

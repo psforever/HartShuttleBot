@@ -1,3 +1,4 @@
+root: true
 extends:
   - plugin:github/recommended
 parserOptions:
@@ -6,3 +7,4 @@ env:
   node: true
 rules:
   no-console: 0
+  i18n-text/no-en: 0

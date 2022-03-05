@@ -24,10 +24,10 @@ module.exports = async function ({client, statsEmitter, log, config, Storage}) {
   )
   if (embedMessages.size > 0) {
     message = embedMessages.first()
-    message = await message.edit(embed())
+    message = await message.edit({embeds: [embed()]})
     await updateSubscriptions()
   } else {
-    message = await channel.send(embed())
+    message = await channel.send({embeds: [embed()]})
   }
 
   try {
@@ -93,7 +93,7 @@ module.exports = async function ({client, statsEmitter, log, config, Storage}) {
     const newMessage = new Discord.MessageEmbed().setURL('https://play.psforever.net')
 
     if (stats.status !== 'UP') {
-      return newMessage.setColor('#ff0000').setTitle('Server Is Offline')
+      return newMessage.setColor('#ff0000').setTitle('Server Offline')
     }
 
     return newMessage
@@ -103,7 +103,7 @@ module.exports = async function ({client, statsEmitter, log, config, Storage}) {
         url: 'https://docs.google.com/document/d/1ZMx1NUylVZCXJNRyhkuVWT0eUKSVYu0JXsU-y3f93BY/edit',
         iconURL: 'https://psforever.net/index_files/logo_crop.png',
       })
-      .setTitle('Server Is Online')
+      .setTitle('Server Online')
       .addField(
         `Online Players: ${stats.players.length}`,
         [

@@ -271,15 +271,12 @@ module.exports = async function ({client, log, statsEmitter, Storage}) {
     const totalPlayers = stats.players.length
     for (const [idx, subscription] of Object.entries(store.get('subscriptions'))) {
       const now = ZonedDateTime.now(ZoneId.of(subscription.timezone))
-      const from = LocalDateTime.now()
+      const from = now
         .truncatedTo(ChronoUnit.DAYS)
         .plusNanos(LocalTime.parse(subscription.timeframes[now.dayOfWeek().value() - 1][0]).toNanoOfDay())
-        .atZone(ZoneId.of(subscription.timezone))
-      const to = LocalDateTime.now()
+      const to = now
         .truncatedTo(ChronoUnit.DAYS)
         .plusNanos(LocalTime.parse(subscription.timeframes[now.dayOfWeek().value() - 1][1]).toNanoOfDay())
-        .atZone(ZoneId.of(subscription.timezone))
-
       if (
         subscription.players > totalPlayers ||
         LocalDateTime.ofInstant(Instant.ofEpochMilli(subscription.lastNotification)).until(
