@@ -90,13 +90,14 @@ module.exports = async function ({client, statsEmitter, log, config, Storage}) {
   }
 
   function embed() {
-    const newMessage = new Discord.MessageEmbed().setURL('https://play.psforever.net')
+    const newMessage = new Discord.MessageEmbed()
 
     if (stats.status !== 'UP') {
       return newMessage.setColor('#ff0000').setTitle('Server Offline')
     }
 
     return newMessage
+      .setURL('https://play.psforever.net')
       .setColor('#0099ff')
       .setAuthor({
         name: 'How to play',
