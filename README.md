@@ -25,3 +25,4 @@ https://discordapp.com/oauth2/authorize?client_id=your_client_id&scope=bot
 - `S3_BUCKET_NAME`: S3 bucket name (required)
 - `S3_ENDPOINT`: S3 endpoint (required)
 - `SENTRY_DSN`: Sentry DSN (optional)
+- `API_URL`: API URL (default `https://play.psforever.net`)
