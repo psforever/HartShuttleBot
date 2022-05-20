@@ -45,7 +45,7 @@ module.exports = async function ({client, statsEmitter, log, config, Storage}) {
       newStats.empires.VS !== stats.empires.VS
     ) {
       stats = newStats
-      message = await message.edit(embed())
+      message = await message.edit({embeds: [embed()]})
       log.info('updated stats')
     } else {
       message = await message.fetch()
