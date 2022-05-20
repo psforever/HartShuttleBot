@@ -302,6 +302,10 @@ module.exports = async function ({client, log, statsEmitter, Storage}) {
         )
         log.info(`alerted ${subscription.tag}`)
       } catch (e) {
+        // If user does not share server we cannot DM
+        if (e.message === 'Cannot send messages to this user') {
+          unsubscribe(user)
+        }
         log.error(`failed to alert ${subscription.tag}: ${e.message}`)
       }
     }
