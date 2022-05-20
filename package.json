@@ -21,6 +21,7 @@
     "exit-hook": "^2.2.1",
     "lodash.throttle": "^4.1.1",
     "minio": "^7.0.26",
+    "node-cron": "^3.0.0",
     "node-fetch": "^2.6.7",
     "object-path-immutable": "^4.1.2",
     "winston": "^3.6.0",
@@ -30,6 +31,7 @@
     "@github/prettier-config": "^0.0.4",
     "eslint": "^8.10.0",
     "eslint-plugin-github": "^4.3.5",
-    "nodemon": "^2.0.15"
+    "nodemon": "^2.0.15",
+    "prettier": "^2.6.2"
   }
 }
