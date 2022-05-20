@@ -295,12 +295,15 @@ module.exports = async function ({client, log, statsEmitter, Storage}) {
       store.set('subscriptions', subscriptions)
 
       const user = await client.users.fetch(subscription.id)
-      await user.send(
-        `**${totalPlayers} players are online on PSForever. Join the battle now!**\n` +
-          `You subscribed to this message. To unsubscribe, reply with \`!alert unsubscribe\`.`
-      )
-
-      log.info(`alerted ${subscription.tag}`)
+      try {
+        await user.send(
+          `**${totalPlayers} players are online on PSForever. Join the battle now!**\n` +
+            `You subscribed to this message. To unsubscribe, reply with \`!alert unsubscribe\`.`
+        )
+        log.info(`alerted ${subscription.tag}`)
+      } catch (e) {
+        log.error(`failed to alert ${subscription.tag}: ${e.message}`)
+      }
     }
   }
 

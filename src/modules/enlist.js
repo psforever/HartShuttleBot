@@ -46,8 +46,10 @@ module.exports = async function ({client, statsEmitter, log, config, Storage}) {
     ) {
       stats = newStats
       message = await message.edit(embed())
+      log.info('updated stats')
     } else {
       message = await message.fetch()
+      log.info('skipped stats update')
     }
     await updateSubscriptions()
 
