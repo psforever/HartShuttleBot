@@ -103,20 +103,20 @@ module.exports = async function ({client, statsEmitter, log, config, Storage}) {
       .setColor('#0099ff')
       .setAuthor({
         name: 'How to play',
-        url: 'https://docs.google.com/document/d/1ZMx1NUylVZCXJNRyhkuVWT0eUKSVYu0JXsU-y3f93BY/edit',
-        iconURL: 'https://psforever.net/index_files/logo_crop.png',
+        url: 'https://www.psforever.net/PSForever/Connection_Guide/',
+        iconURL: 'https://www.psforever.net/res/logo.png',
       })
       .setTitle('Server Online')
-      .addField(
-        `Online Players: ${stats.players.length}`,
-        [
+      .addFields({
+        name: `Online Players: ${stats.players.length}`,
+        value: [
           ['TR', 'terran'],
           ['NC', 'newcon'],
           ['VS', 'vanu'],
         ]
           .map(v => `${stats.empires[v[0]]} <:${v[1]}:${emojis[v[1]]}>`)
-          .join(' ')
-      )
+          .join(' '),
+      })
       .addFields({
         name: 'Want to subscribe to battle alerts?',
         value: `Direct message <@${client.user.id}> with \`!alert subscribe\` to get started.`,
